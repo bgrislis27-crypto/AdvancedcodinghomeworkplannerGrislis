@@ -506,10 +506,14 @@
   }
 
   function setSidebar(open) {
-    document.getElementById("sidebar").classList.toggle("open", open);
+    var sidebar = document.getElementById("sidebar");
+    sidebar.classList.toggle("open", open);
     document.getElementById("backdrop").hidden = !open;
     document.getElementById("menu-btn").setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("nav-open", open);
+    var mobile = window.matchMedia("(max-width: 800px)").matches;
+    if (mobile && !open) sidebar.setAttribute("inert", "");
+    else sidebar.removeAttribute("inert");
   }
 
   function updateNavBadge() {
@@ -1186,13 +1190,19 @@
     }).join("");
   }
 
+  function parseDecimal(raw) {
+    var cleaned = String(raw == null ? "" : raw).trim().replace(/,/g, "");
+    if (!cleaned) return NaN;
+    return Number(cleaned);
+  }
+
   function readGradeForm() {
     var name = document.getElementById("grade-name").value.trim();
     var earnedRaw = document.getElementById("grade-earned").value.trim();
     var totalRaw = document.getElementById("grade-total").value.trim();
     var weightRaw = document.getElementById("grade-weight").value.trim();
-    var earned = Number(earnedRaw);
-    var total = Number(totalRaw);
+    var earned = parseDecimal(earnedRaw);
+    var total = parseDecimal(totalRaw);
     if (!name) return { error: "Name this grade so you can tell it apart." };
     if (earnedRaw === "" || !isFinite(earned) || earned < 0) return { error: "Enter the points earned. Zero is allowed." };
     if (totalRaw === "") return { error: "Enter the points possible." };
@@ -1200,7 +1210,7 @@
     if (earned > 100000 || total > 100000) return { error: "Enter points up to 100,000." };
     var weight = null;
     if (weightRaw !== "") {
-      weight = Number(weightRaw);
+      weight = parseDecimal(weightRaw);
       if (!isFinite(weight) || weight <= 0) return { error: "Weight must be greater than zero, or left blank." };
       if (weight > 1000) return { error: "Weight must be 1,000 or less." };
     }
@@ -1305,6 +1315,11 @@
       setSidebar(open);
     });
     document.getElementById("backdrop").addEventListener("click", function () { setSidebar(false); });
+    window.addEventListener("resize", function () {
+      var mobile = window.matchMedia("(max-width: 800px)").matches;
+      if (!mobile) setSidebar(false);
+      else setSidebar(document.getElementById("sidebar").classList.contains("open"));
+    });
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
     document.getElementById("theme-toggle-top").addEventListener("click", toggleTheme);
     document.getElementById("clear-filters").addEventListener("click", clearFilters);
