@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="StudyHub is a homework planner for students. Track assignments, deadlines, study sessions, and grades in your browser.">
+  <meta name="theme-color" content="#070d1a">
+  <title>StudyHub — Homework Planner</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c3aed'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 8H24v14H10.5A2.5 2.5 0 0 0 8 24.5V10.5z' fill='none' stroke='white' stroke-width='1.8'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 13H24' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E">
+  <script>
+    try {
+      var saved = JSON.parse(localStorage.getItem('studyhub.prefs') || '{}');
+      if (saved.theme === 'light' || saved.theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', saved.theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', saved.theme === 'light' ? '#eef2f9' : '#070d1a');
+      }
+    } catch (error) {
+      /* Preferences stay at the default dark theme if storage is blocked. */
+    }
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5z"></path>
+            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 9H20"></path>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>StudyHub</strong>
+          <small>Homework planner</small>
+        </span>
+      </div>
+
+      <p class="nav-kicker">Menu</p>
+      <nav class="nav" aria-label="Primary">
+        <a class="nav-btn active" href="#dashboard" data-view="dashboard" title="Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a class="nav-btn" href="#assignments" data-view="assignments" title="Assignments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path></svg>
+          <span class="nav-label">Assignments</span>
+          <span class="nav-badge" id="nav-overdue" hidden>0</span>
+        </a>
+        <a class="nav-btn" href="#calendar" data-view="calendar" title="Calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+          <span class="nav-label">Calendar</span>
+        </a>
+        <a class="nav-btn" href="#timer" data-view="timer" title="Study Timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 3h6"></path></svg>
+          <span class="nav-label">Study Timer</span>
+        </a>
+        <a class="nav-btn" href="#grades" data-view="grades" title="Grade Calculator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9M12 16V5M17 16v-4"></path></svg>
+          <span class="nav-label">Grade Calculator</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <p class="sidebar-note">Saved on this device. No account needed.</p>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" aria-label="Switch to light theme">
+          <span class="theme-icon" aria-hidden="true">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"></path></svg>
+          </span>
+          <span class="theme-copy">
+            <span id="theme-label">Dark theme</span>
+          </span>
+          <span class="switch" aria-hidden="true"></span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop" hidden></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+        </button>
+        <div class="topbar-titles">
+          <h1 class="page-title" id="page-title">Dashboard</h1>
+          <p class="page-sub" id="page-sub">Your day at a glance</p>
+        </div>
+        <div class="top-actions">
+          <a class="mini-timer" id="mini-timer" href="#timer" hidden>
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="mini-time">25:00</span>
+            <span class="mode" id="mini-mode">Focus</span>
+          </a>
+          <button type="button" class="icon-btn" id="theme-toggle-top" aria-label="Switch to light theme">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="content" id="content">
+        <section id="view-dashboard" class="view active" aria-label="Dashboard"></section>
+
+        <section id="view-assignments" class="view" aria-label="Assignments">
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" data-action="add">Add assignment</button>
+            <div class="filters">
+              <label>Subject
+                <select id="filter-subject">
+                  <option value="all">All subjects</option>
+                </select>
+              </label>
+              <label>Priority
+                <select id="filter-priority">
+                  <option value="all">All priorities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </label>
+              <label>Completed tasks
+                <select id="filter-status">
+                  <option value="all">All tasks</option>
+                  <option value="active">Active only</option>
+                  <option value="completed">Completed only</option>
+                </select>
+              </label>
+              <label class="toggle" for="filter-upcoming">
+                <input type="checkbox" id="filter-upcoming">
+                <span>Due today or later</span>
+              </label>
+              <label class="search-field">Search
+                <input type="search" id="filter-search" placeholder="Title, subject, or notes" autocomplete="off">
+              </label>
+              <button type="button" class="btn btn-ghost btn-small" id="clear-filters">Clear filters</button>
+            </div>
+          </div>
+          <div class="list-head">
+            <p id="list-count">Loading assignments…</p>
+            <button type="button" class="btn btn-ghost btn-small" id="restore-samples">Restore samples</button>
+          </div>
+          <div id="assignment-list"></div>
+        </section>
+
+        <section id="view-calendar" class="view" aria-label="Calendar">
+          <div class="calendar-layout">
+            <div class="card">
+              <div class="cal-toolbar">
+                <button type="button" class="icon-btn" id="cal-prev" aria-label="Previous month">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+                </button>
+                <h2 id="cal-title">Calendar</h2>
+                <button type="button" class="icon-btn" id="cal-next" aria-label="Next month">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+                </button>
+                <button type="button" class="btn btn-ghost btn-small" id="cal-today">Today</button>
+              </div>
+              <div class="cal-grid" id="cal-grid"></div>
+              <ul class="legend" aria-label="Priority colors">
+                <li><i class="dot priority-high"></i> High</li>
+                <li><i class="dot priority-medium"></i> Medium</li>
+                <li><i class="dot priority-low"></i> Low</li>
+              </ul>
+            </div>
+            <div class="card cal-detail" id="cal-detail"></div>
+          </div>
+        </section>
+
+        <section id="view-timer" class="view" aria-label="Study Timer">
+          <div class="timer-layout">
+            <div class="card timer-card">
+              <div class="mode-switch" role="group" aria-label="Timer mode">
+                <button type="button" data-timer-mode="focus" aria-pressed="true">Focus</button>
+                <button type="button" data-timer-mode="short" aria-pressed="false">Short break</button>
+                <button type="button" data-timer-mode="long" aria-pressed="false">Long break</button>
+              </div>
+              <div class="timer-face" id="timer-face">
+                <svg class="timer-svg" viewBox="0 0 120 120" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="timerGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#c4b5fd"></stop>
+                      <stop offset="100%" stop-color="#60a5fa"></stop>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="60" cy="60" r="52" class="timer-track"></circle>
+                  <circle cx="60" cy="60" r="52" id="timer-progress" class="timer-progress"></circle>
+                </svg>
+                <div class="timer-readout">
+                  <p id="timer-display">25:00</p>
+                  <p id="timer-mode-label">Focus</p>
+                </div>
+              </div>
+              <p id="timer-status" class="sr-only" aria-live="polite"></p>
+              <div class="timer-actions">
+                <button type="button" class="btn btn-primary" id="timer-start">Start</button>
+                <button type="button" class="btn btn-ghost" id="timer-pause" disabled>Pause</button>
+                <button type="button" class="btn btn-ghost" id="timer-reset">Reset</button>
+              </div>
+              <label class="field timer-length">
+                <span id="timer-minutes-label">Focus length (minutes)</span>
+                <input id="timer-minutes" type="number" min="1" max="180" step="1" value="25" inputmode="numeric">
+                <span class="hint">Saved on this device. You can change it while the timer is paused.</span>
+              </label>
+              <p class="muted" id="timer-help">Stay on one task until the timer ends.</p>
+            </div>
+            <div class="timer-side">
+              <section class="card">
+                <h2>Today's sessions</h2>
+                <p id="session-count" class="session-count">0 focus sessions</p>
+                <div id="session-dots" class="session-dots" aria-hidden="true"></div>
+                <p id="session-note" class="muted"></p>
+              </section>
+              <section class="card">
+                <h2>How a session works</h2>
+                <ol class="steps">
+                  <li>Press Start on Focus. The usual length is 25 minutes.</li>
+                  <li>Pause if you are interrupted. Reset returns the current mode to its full length.</li>
+                  <li>After a focus session, take a 5 minute short break. Every fourth session, take a 15 minute long break.</li>
+                </ol>
+              </section>
+              <section class="card">
+                <h2>Study next</h2>
+                <div id="study-next"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-grades" class="view" aria-label="Grade Calculator">
+          <div class="grades-top">
+            <form id="grade-form" class="card form-card" novalidate>
+              <h2 id="grade-form-title">Add a grade</h2>
+              <p class="lede">Enter the points you earned and the points possible. Add a weight only if this grade counts more than the others.</p>
+              <div class="form-grid">
+                <label class="field full">Grade name
+                  <input id="grade-name" name="name" maxlength="80" placeholder="Chapter 4 quiz" autocomplete="off">
+                </label>
+                <label class="field">Points earned
+                  <input id="grade-earned" name="earned" type="number" min="0" step="0.01" inputmode="decimal" placeholder="18">
+                </label>
+                <label class="field">Points possible
+                  <input id="grade-total" name="total" type="number" min="0" step="0.01" inputmode="decimal" placeholder="20">
+                </label>
+                <label class="field full">Weight
+                  <span class="hint">Optional. Leave blank to count this grade equally. A weight of 2 counts twice as much as a blank one.</span>
+                  <input id="grade-weight" name="weight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Equal weight">
+                </label>
+              </div>
+              <p id="grade-error" class="form-error" role="alert" hidden></p>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="grade-submit">Add grade</button>
+                <button type="button" class="btn btn-ghost" id="grade-cancel" hidden>Cancel edit</button>
+              </div>
+            </form>
+            <div class="card average-card" id="average-card"></div>
+          </div>
+          <div class="card grade-list-card">
+            <div class="section-head">
+              <h2>Entered grades</h2>
+              <button type="button" class="btn btn-ghost btn-small" id="clear-grades">Clear all</button>
+            </div>
+            <div id="grade-list"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <datalist id="subject-list">
+    <option value="Algebra II"></option>
+    <option value="Geometry"></option>
+    <option value="English"></option>
+    <option value="Biology"></option>
+    <option value="Chemistry"></option>
+    <option value="Physics"></option>
+    <option value="U.S. History"></option>
+    <option value="World History"></option>
+    <option value="Spanish"></option>
+    <option value="French"></option>
+    <option value="Computer Science"></option>
+    <option value="Studio Art"></option>
+    <option value="Music"></option>
+    <option value="Economics"></option>
+    <option value="Health"></option>
+  </datalist>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-relevant="additions"></div>
+  <noscript>
+    <p class="noscript">StudyHub needs JavaScript to run. Your assignments still stay in this browser — there is no account or server.</p>
+  </noscript>
+  <script src="js/app.js"></script>
+</body>
+</html>
