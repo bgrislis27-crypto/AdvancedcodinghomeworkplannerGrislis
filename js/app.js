@@ -22,7 +22,16 @@
     long: "Take a real break. This one comes after four focus sessions."
   };
   var RING = 2 * Math.PI * 52;
-  var SUBJECT_COLORS = ["#8b5cf6", "#3b82f6", "#06b6d4", "#22c55e", "#f59e0b", "#f43f5e", "#ec4899", "#6366f1"];
+  var SUBJECT_COLORS = ["#3b82f6", "#7c3aed", "#0f9f6e", "#f59e0b", "#e11d48", "#0891b2", "#ec4899", "#6366f1"];
+  var SUBJECT_TONES = [
+    { bg: "#e8f1ff", fg: "#3b82f6" },
+    { bg: "#f1e9ff", fg: "#7c3aed" },
+    { bg: "#e7f8ef", fg: "#0f9f6e" },
+    { bg: "#fff4e5", fg: "#f59e0b" },
+    { bg: "#ffe8ea", fg: "#e11d48" },
+    { bg: "#e6f7fb", fg: "#0891b2" }
+  ];
+  var DASH = { query: "", range: "month", scope: "week" };
 
   var assignments = [];
   var grades = [];
@@ -82,7 +91,7 @@
     try { saved = JSON.parse(readRaw(KEYS.prefs) || "{}"); } catch (error) { saved = {}; }
     var durations = saved.durations || {};
     return {
-      theme: saved.theme === "light" ? "light" : "dark",
+      theme: saved.theme === "dark" ? "dark" : "light",
       name: typeof saved.name === "string" ? saved.name.slice(0, 40) : "",
       durations: {
         focus: clampMinutes(durations.focus, 25),
@@ -173,11 +182,19 @@
     return relativeDue(assignment.dueDate) + " · " + pretty;
   }
 
-  function subjectColor(name) {
+  function subjectHash(name) {
     var hash = 0;
     var text = String(name || "");
     for (var i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
-    return SUBJECT_COLORS[hash % SUBJECT_COLORS.length];
+    return hash;
+  }
+
+  function subjectColor(name) {
+    return SUBJECT_COLORS[subjectHash(name) % SUBJECT_COLORS.length];
+  }
+
+  function subjectTone(name) {
+    return SUBJECT_TONES[subjectHash(name) % SUBJECT_TONES.length];
   }
 
   function normalizeAssignment(item) {
@@ -491,12 +508,22 @@
     var light = prefs.theme === "light";
     document.documentElement.setAttribute("data-theme", prefs.theme);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", light ? "#eef2f9" : "#070d1a");
+    if (meta) meta.setAttribute("content", light ? "#e8eaee" : "#10141b");
+    paintAvatar();
     var label = light ? "Switch to dark theme" : "Switch to light theme";
     document.getElementById("theme-toggle").setAttribute("aria-pressed", String(light));
     document.getElementById("theme-toggle").setAttribute("aria-label", label);
     document.getElementById("theme-toggle-top").setAttribute("aria-label", label);
     document.getElementById("theme-label").textContent = light ? "Light theme" : "Dark theme";
+  }
+
+  function paintAvatar() {
+    var name = prefs.name.trim();
+    var initial = name ? name.charAt(0).toUpperCase() : "S";
+    var avatar = document.getElementById("avatar-initial");
+    var button = document.getElementById("avatar-btn");
+    if (avatar) avatar.textContent = initial;
+    if (button) button.setAttribute("aria-label", name ? "Change name, " + name : "Add your name");
   }
 
   function toggleTheme() {
@@ -555,6 +582,9 @@
     document.getElementById("page-title").textContent = titles[name][0];
     document.getElementById("page-sub").textContent = titles[name][1];
     document.title = titles[name][0] + " · StudyHub";
+    document.querySelector(".topbar").classList.toggle("is-dashboard", name === "dashboard");
+    var globalSearch = document.getElementById("global-search");
+    if (globalSearch && document.activeElement !== globalSearch) globalSearch.value = filters.search;
     setSidebar(false);
     if (name === "dashboard") renderDashboard();
     if (name === "assignments") {
@@ -601,84 +631,277 @@
     return '<div class="row-item' + (assignment.completed ? " is-done" : "") + (overdue ? " is-overdue" : "") + '"><span class="priority-dot priority-' + assignment.priority + '" aria-hidden="true"></span><div class="row-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + " · " + escapeHtml(dueLabel(assignment)) + " · " + formatMinutes(assignment.estimatedMinutes) + '</span></div><div class="row-actions"><button type="button" class="btn btn-small ' + (assignment.completed ? "btn-ghost" : "btn-success") + '" data-action="toggle-complete" data-id="' + assignment.id + '">' + (assignment.completed ? "Reopen" : "Done") + '</button><button type="button" class="btn btn-small btn-ghost" data-action="edit" data-id="' + assignment.id + '">Edit</button><button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + assignment.id + '">Delete</button></div></div>';
   }
 
-  function greeting() {
-    var hour = new Date().getHours();
-    var part = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-    var name = prefs.name.trim();
-    return name ? "Good " + part + ", " + name : "Good " + part;
+  function monthStamp(date) {
+    return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
   }
 
-  function heroMessage(stats) {
-    if (!assignments.length) return "Add an assignment to start planning. Everything stays saved in this browser.";
-    if (!stats.active.length) return "Everything on your list is complete. Enjoy the breathing room.";
-    if (stats.overdue.length && stats.dueToday.length) {
-      return stats.overdue.length + " overdue and " + stats.dueToday.length + " due today. Start with the oldest one.";
+  function subjectBars(doneOnly) {
+    var map = {};
+    assignments.forEach(function (item) {
+      if (doneOnly && !item.completed) return;
+      map[item.subject] = (map[item.subject] || 0) + 1;
+    });
+    var values = Object.keys(map).sort().map(function (key) { return map[key]; });
+    if (!values.length) return [0, 0, 0, 0, 0, 0];
+    return values;
+  }
+
+  function sparkBars(values, color) {
+    var max = 1;
+    values.forEach(function (value) { if (value > max) max = value; });
+    var width = 112;
+    var height = 48;
+    var count = Math.max(values.length, 1);
+    var gap = 4;
+    var bar = (width - gap * (count - 1)) / count;
+    color = color || "#8ea0b5";
+    var shapes = values.map(function (value, index) {
+      var barHeight = Math.max(6, (value / max) * (height - 4));
+      var x = index * (bar + gap);
+      var y = height - barHeight;
+      var opacity = (0.28 + 0.72 * (value / max)).toFixed(2);
+      return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bar.toFixed(1) + '" height="' + barHeight.toFixed(1) + '" rx="3" fill="' + color + '" fill-opacity="' + opacity + '"></rect>';
+    }).join("");
+    return '<svg class="spark" viewBox="0 0 ' + width + ' ' + height + '" aria-hidden="true">' + shapes + "</svg>";
+  }
+
+  function chartSeries() {
+    var today = new Date();
+    var points = [];
+    if (DASH.range === "week") {
+      var start = new Date(today);
+      start.setDate(today.getDate() - today.getDay() - 49);
+      for (var week = 0; week < 8; week += 1) {
+        var from = new Date(start);
+        from.setDate(start.getDate() + week * 7);
+        var to = new Date(from);
+        to.setDate(from.getDate() + 6);
+        var fromISO = toISO(from);
+        var toDate = toISO(to);
+        points.push({
+          label: (from.getMonth() + 1) + "/" + from.getDate(),
+          value: assignments.filter(function (item) { return item.dueDate >= fromISO && item.dueDate <= toDate; }).length
+        });
+      }
+      return { points: points, caption: "Assignments due each week" };
     }
-    if (stats.overdue.length) {
-      return stats.overdue.length + " overdue " + (stats.overdue.length === 1 ? "assignment needs" : "assignments need") + " attention.";
+    if (DASH.range === "year") {
+      var year = today.getFullYear();
+      for (var y = year - 4; y <= year; y += 1) {
+        points.push({
+          label: String(y),
+          value: assignments.filter(function (item) { return item.dueDate.slice(0, 4) === String(y); }).length
+        });
+      }
+      return { points: points, caption: "Assignments due each year" };
     }
-    if (stats.dueToday.length) {
-      return stats.dueToday.length + " due today. You still have " + formatMinutes(stats.minutesLeft) + " of work overall.";
+    for (var month = 11; month >= 0; month -= 1) {
+      var date = new Date(today.getFullYear(), today.getMonth() - month, 1);
+      var key = monthStamp(date);
+      points.push({
+        label: date.toLocaleDateString(undefined, { month: "short" }),
+        value: assignments.filter(function (item) { return item.dueDate.slice(0, 7) === key; }).length
+      });
     }
-    return stats.active.length + " active " + (stats.active.length === 1 ? "assignment" : "assignments") + " and " + formatMinutes(stats.minutesLeft) + " of work still ahead.";
+    return { points: points, caption: "Assignments due each month" };
+  }
+
+  function lineChart(points) {
+    var width = 640;
+    var height = 220;
+    var padL = 36;
+    var padR = 12;
+    var padT = 18;
+    var padB = 28;
+    var max = 1;
+    points.forEach(function (point) { if (point.value > max) max = point.value; });
+    var top = Math.max(4, Math.ceil(max / 2) * 2);
+    var innerW = width - padL - padR;
+    var innerH = height - padT - padB;
+    var coords = points.map(function (point, index) {
+      var x = padL + (points.length === 1 ? innerW / 2 : (innerW * index) / (points.length - 1));
+      var y = padT + innerH - (point.value / top) * innerH;
+      return { x: x, y: y, label: point.label, value: point.value };
+    });
+    var line = coords.map(function (coord, index) {
+      return (index ? "L" : "M") + coord.x.toFixed(1) + " " + coord.y.toFixed(1);
+    }).join(" ");
+    var last = coords[coords.length - 1];
+    var area = line + " L" + last.x.toFixed(1) + " " + (padT + innerH).toFixed(1) + " L" + coords[0].x.toFixed(1) + " " + (padT + innerH).toFixed(1) + " Z";
+    var grid = "";
+    for (var step = 0; step <= 4; step += 1) {
+      var y = padT + (innerH * step) / 4;
+      var label = Math.round(top * (1 - step / 4));
+      grid += '<line class="grid-line" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (width - padR) + '" y2="' + y.toFixed(1) + '"></line>';
+      grid += '<text class="axis" x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + label + "</text>";
+    }
+    var labels = coords.map(function (coord) {
+      return '<text class="axis" x="' + coord.x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="middle">' + escapeHtml(coord.label) + "</text>";
+    }).join("");
+    var dots = coords.map(function (coord) {
+      return '<circle class="line-dot" cx="' + coord.x.toFixed(1) + '" cy="' + coord.y.toFixed(1) + '" r="4.5"><title>' + escapeHtml(coord.label + ": " + coord.value) + "</title></circle>";
+    }).join("");
+    return '<svg class="line-chart" viewBox="0 0 ' + width + " " + height + '" role="img">' +
+      '<defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#12b886" stop-opacity="0.28"></stop><stop offset="100%" stop-color="#12b886" stop-opacity="0"></stop></linearGradient></defs>' +
+      grid + '<path d="' + area + '" fill="url(#areaFill)"></path><path d="' + line + '" fill="none" stroke="#12b886" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>' +
+      dots + labels + "</svg>";
+  }
+
+  function gradeSpark(list) {
+    var width = 180;
+    var height = 70;
+    if (!list.length) {
+      return '<svg class="grade-spark" viewBox="0 0 ' + width + " " + height + '" aria-hidden="true"><path d="M8 48 C50 46 90 40 172 28" fill="none" stroke="#d5dee8" stroke-width="2"></path></svg>';
+    }
+    var coords = list.map(function (grade, index) {
+      var pct = Math.max(0, Math.min(100, (grade.earned / grade.total) * 100));
+      var x = list.length === 1 ? width / 2 : (width - 16) * index / (list.length - 1) + 8;
+      var y = 10 + (1 - pct / 100) * (height - 22);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    });
+    var area = "M" + coords[0] + " L" + coords.join(" L") + " L" + (width - 8) + " " + (height - 8) + " L8 " + (height - 8) + " Z";
+    return '<svg class="grade-spark" viewBox="0 0 ' + width + " " + height + '" aria-hidden="true"><path d="' + area + '" fill="#12b886" fill-opacity="0.18"></path><polyline points="' + coords.join(" ") + '" fill="none" stroke="#12b886" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>';
+  }
+
+  function donut(percent) {
+    var radius = 36;
+    var length = 2 * Math.PI * radius;
+    var safe = Math.max(0, Math.min(100, percent));
+    var offset = length * (1 - safe / 100);
+    return '<div class="donut"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="donut-track" cx="50" cy="50" r="' + radius + '"></circle><circle class="donut-value" cx="50" cy="50" r="' + radius + '" data-ring data-offset="' + offset + '" stroke-dasharray="' + length + '" stroke-dashoffset="' + length + '"></circle></svg><strong>' + Math.round(safe) + "%</strong></div>";
+  }
+
+  function miniRing(percent) {
+    var radius = 16;
+    var length = 2 * Math.PI * radius;
+    var safe = Math.max(0, Math.min(100, percent));
+    var offset = length * (1 - safe / 100);
+    return '<div class="mini-ring"><svg viewBox="0 0 42 42" aria-hidden="true"><circle class="donut-track" cx="21" cy="21" r="' + radius + '"></circle><circle class="donut-value" cx="21" cy="21" r="' + radius + '" data-ring data-offset="' + offset + '" stroke-dasharray="' + length + '" stroke-dashoffset="' + length + '"></circle></svg><span>' + Math.round(safe) + "%</span></div>";
+  }
+
+  function duePressure(assignment) {
+    if (assignment.completed) return 100;
+    var diff = daysBetween(todayISO(), assignment.dueDate);
+    if (diff <= 0) return 100;
+    if (diff >= 14) return 12;
+    return Math.round(100 - (diff / 14) * 88);
+  }
+
+  function shortDate(iso) {
+    return parseISO(iso).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  function statusPill(assignment) {
+    if (assignment.completed) return '<span class="status-pill done">Done</span>';
+    if (assignment.dueDate < todayISO()) return '<span class="status-pill late">Overdue</span>';
+    return '<span class="status-pill assigned">Assigned</span>';
+  }
+
+  function tableRow(assignment) {
+    return '<tr class="' + (assignment.completed ? "is-done" : "") + (assignment.id === highlightId ? " just-added" : "") + '"><td>' + escapeHtml(assignment.subject) + '</td><td><strong>' + escapeHtml(assignment.title) + "</strong>" + (assignment.description ? '<span class="desc">' + escapeHtml(assignment.description) + "</span>" : "") + "</td><td>" + escapeHtml(shortDate(assignment.dueDate)) + "</td><td>" + statusPill(assignment) + '</td><td class="marks">' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + '</td><td class="priority-text priority-' + assignment.priority + '">' + assignment.priority + '</td><td class="row-actions"><button type="button" class="btn btn-small ' + (assignment.completed ? "btn-ghost" : "btn-success") + '" data-action="toggle-complete" data-id="' + assignment.id + '">' + (assignment.completed ? "Reopen" : "Done") + '</button><button type="button" class="btn btn-small btn-ghost" data-action="edit" data-id="' + assignment.id + '">Edit</button><button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + assignment.id + '">Delete</button></td></tr>';
+  }
+
+  function homeworkTable(rows, emptyTitle, emptyCopy) {
+    if (!rows.length) {
+      return '<div class="table-scroll"><table class="hw-table"><tbody><tr><td>' + emptyState(emptyTitle, emptyCopy, "", "") + "</td></tr></tbody></table></div>";
+    }
+    return '<div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Homework title</th><th>Date</th><th>Status</th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody>' + rows.map(tableRow).join("") + "</tbody></table></div>";
+  }
+
+  function dashRows() {
+    var query = DASH.query.trim().toLowerCase();
+    return sortAssignments(assignments.filter(function (assignment) {
+      if (!query) return true;
+      var blob = (assignment.title + " " + assignment.subject + " " + assignment.description).toLowerCase();
+      return blob.indexOf(query) !== -1;
+    }));
+  }
+
+  function paintDashRows() {
+    var body = document.getElementById("dash-rows");
+    if (!body) return;
+    var rows = dashRows();
+    if (!assignments.length) {
+      body.innerHTML = '<tr><td colspan="7">' + emptyState("No assignments yet", "Add an assignment and it will show up in this table, on the calendar, and in the timer.", "Add assignment", "add") + "</td></tr>";
+      return;
+    }
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7">' + emptyState("Nothing matches", "Try a different title or subject.", "", "") + "</td></tr>";
+      return;
+    }
+    body.innerHTML = rows.map(tableRow).join("");
+  }
+
+  function weekStrip() {
+    var today = parseISO(todayISO());
+    var start = new Date(today);
+    start.setDate(today.getDate() - today.getDay());
+    var names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var html = '<div class="week-strip">';
+    for (var i = 0; i < 7; i += 1) {
+      var date = new Date(start);
+      date.setDate(start.getDate() + i);
+      var iso = toISO(date);
+      var due = assignments.some(function (item) { return !item.completed && item.dueDate === iso; });
+      html += '<div class="week-day' + (iso === todayISO() ? " is-today" : "") + '"><span>' + names[i] + "</span><strong>" + date.getDate() + "</strong>" + (due ? "<i></i>" : "") + "</div>";
+    }
+    return html + "</div>";
+  }
+
+  function upcomingMarkup(items) {
+    if (!items.length) {
+      return emptyState("Nothing coming up", assignments.length ? "No open assignments are due today or later." : "Add a due date and it will land here.", assignments.length ? "" : "Add assignment", "add");
+    }
+    return '<div class="up-list">' + items.map(function (assignment) {
+      var tone = subjectTone(assignment.subject);
+      return '<div class="up-row"><span class="subj-badge" style="--tone-bg:' + tone.bg + ";--tone-fg:" + tone.fg + '">' + escapeHtml(assignment.subject.slice(0, 1).toUpperCase()) + '</span><div class="up-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(formatDate(assignment.dueDate)) + '</span></div><div class="up-side"><span>' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + "</span><small>" + escapeHtml(assignment.subject) + "</small></div></div>";
+    }).join("") + "</div>";
+  }
+
+  function pendingMarkup(items) {
+    if (!items.length) {
+      var copy = DASH.scope === "week" ? "Nothing unfinished is due this week." : "Every assignment is checked off.";
+      return emptyState("No pending homework", assignments.length ? copy : "Add an assignment to start the list.", assignments.length ? "" : "Add assignment", "add");
+    }
+    return '<div class="pend-list">' + items.map(function (assignment) {
+      var pressure = duePressure(assignment);
+      return '<div class="pend-row"><div class="pend-copy"><strong>' + escapeHtml(assignment.subject) + "</strong><span>" + escapeHtml(assignment.title) + "</span></div>" + miniRing(pressure) + "</div>";
+    }).join("") + "</div>";
+  }
+
+  function kpiCard(className, tone, label, value, hint, extra) {
+    return '<article class="panel kpi ' + className + '"><div class="kpi-top"><span class="kpi-icon ' + tone + '" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg></span><span>' + label + '</span></div><div class="kpi-body"><div><strong class="kpi-value">' + value + '</strong><span class="kpi-hint">' + hint + "</span></div>" + extra + "</div></article>";
   }
 
   function renderDashboard() {
     var stats = getStats();
-    var subjects = subjectProgress();
-    var mix = priorityMix();
-    var load = workload();
-    var upcoming = sortAssignments(stats.active.filter(function (item) { return item.dueDate >= todayISO(); })).slice(0, 5);
-    var overdueSorted = sortAssignments(stats.overdue);
-    var onTimePercent = stats.completed.length ? Math.round((stats.onTime.length / stats.completed.length) * 100) : 0;
-    var offset = RING * (1 - stats.percent / 100);
-    var subjectMeters = subjects.length
-      ? subjects.map(function (row) {
-        var pct = Math.round((row.done / row.total) * 100);
-        return meter(escapeHtml(row.subject), row.done + " of " + row.total, pct);
-      }).join("")
-      : "<p class=\"muted\">Subject progress will show up after you add assignments.</p>";
-    var priorityBlock = mix.total
-      ? '<div class="stack" aria-hidden="true"><span class="stack-seg priority-high" data-fill="' + mix.widths.high + '"></span><span class="stack-seg priority-medium" data-fill="' + mix.widths.medium + '"></span><span class="stack-seg priority-low" data-fill="' + mix.widths.low + '"></span></div><ul class="legend"><li><i class="dot priority-high"></i> High ' + mix.counts.high + '</li><li><i class="dot priority-medium"></i> Medium ' + mix.counts.medium + '</li><li><i class="dot priority-low"></i> Low ' + mix.counts.low + "</li></ul>"
-      : "<p class=\"muted\">No active assignments, so the priority mix is empty.</p>";
-    var loadBlock = load.total
-      ? (function () {
-        var overdueWidth = (load.overdue / load.total) * 100;
-        var weekWidth = (load.week / load.total) * 100;
-        var laterWidth = (load.later / load.total) * 100;
-        return '<div class="workload"><div class="meter-label"><span>Study time still on your list</span><span>' + formatMinutes(load.total) + '</span></div><div class="stack" aria-label="Remaining study time"><span class="stack-seg priority-high" data-fill="' + overdueWidth + '"></span><span class="stack-seg priority-medium" data-fill="' + weekWidth + '"></span><span class="stack-seg priority-low" data-fill="' + laterWidth + '"></span></div><ul class="legend"><li><i class="dot priority-high"></i> Overdue ' + formatMinutes(load.overdue) + '</li><li><i class="dot priority-medium"></i> This week ' + formatMinutes(load.week) + '</li><li><i class="dot priority-low"></i> Later ' + formatMinutes(load.later) + "</li></ul></div>";
-      })()
-      : "";
-    var upcomingHtml = upcoming.length
-      ? '<div class="row-list">' + upcoming.map(assignmentRow).join("") + "</div>"
-      : emptyState("Nothing coming up", assignments.length ? "No active assignments are due today or later." : "Add a due date and it will land here.", assignments.length ? "" : "Add assignment", "add");
-    var overdueHtml = stats.overdue.length
-      ? '<div class="row-list">' + overdueSorted.map(assignmentRow).join("") + "</div>"
-      : emptyState(assignments.length ? "No overdue work" : "No assignments yet", assignments.length ? "You are on top of the due dates." : "Add an assignment and anything past due will show here.", "", "");
-
+    var summary = gradeSummary(grades);
+    var upcoming = sortAssignments(stats.active.filter(function (item) { return item.dueDate >= todayISO(); })).slice(0, 4);
+    var weekEnd = addDays(todayISO(), 6);
+    var pending = sortAssignments(stats.active.filter(function (item) {
+      return DASH.scope === "all" || item.dueDate <= weekEnd;
+    })).slice(0, 4);
+    var series = chartSeries();
+    var totalHint = stats.overdue.length ? stats.overdue.length + " overdue" : "On your list";
+    var doneHint = assignments.length ? stats.percent + "% of your list" : "Nothing checked off yet";
+    var gradeValue = summary ? summary.average.toFixed(0) + "%" : "—";
+    var gradeHint = summary ? summary.letter + " · " + summary.count + (summary.count === 1 ? " grade" : " grades") : "Add a grade";
+    var rangeBtn = function (range, label) {
+      return '<button type="button" class="range-btn" data-action="dash-range" data-range="' + range + '" aria-pressed="' + (DASH.range === range ? "true" : "false") + '">' + label + "</button>";
+    };
     document.getElementById("view-dashboard").innerHTML = ''
-      + '<section class="hero"><div class="hero-copy"><p class="eyebrow">' + escapeHtml(formatLong(todayISO())) + "</p><h2>" + escapeHtml(greeting()) + '</h2><p class="hero-message">' + escapeHtml(heroMessage(stats)) + '</p><div class="hero-actions"><button type="button" class="btn btn-primary" data-action="add">Add assignment</button><button type="button" class="btn btn-on-dark" data-action="edit-name">' + (prefs.name.trim() ? "Change name" : "Add your name") + '</button></div></div><div class="hero-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#c4b5fd"></stop><stop offset="100%" stop-color="#60a5fa"></stop></linearGradient></defs><circle cx="60" cy="60" r="52" class="ring-track"></circle><circle cx="60" cy="60" r="52" class="ring-value" data-ring data-offset="' + offset + '" stroke-dasharray="' + RING + '" stroke-dashoffset="' + RING + '"></circle></svg><div class="hero-ring-label"><strong>' + stats.percent + '%</strong><span>complete</span></div></div></section>'
-      + '<div class="stat-grid">'
-      + statCard("Active", stats.active.length, "Still on your list", "")
-      + statCard("Overdue", stats.overdue.length, "Past the due date", stats.overdue.length ? "is-alert" : "", "alert")
-      + statCard("Due this week", stats.dueWeek.length, "Today through the next 6 days", "", "week")
-      + statCard("Completed", stats.completed.length, assignments.length ? stats.percent + "% of your list" : "Nothing checked off yet", "", "good")
-      + "</div>"
-      + '<div class="dash-grid"><section class="card"><div class="section-head"><h2>Progress</h2><a class="linkish" href="#assignments">View assignments</a></div>'
-      + meter("Overall", stats.completed.length + " of " + assignments.length + " complete", stats.percent)
-      + meter("On time", stats.completed.length ? stats.onTime.length + " of " + stats.completed.length + " completed on time" : "Complete one to start this", onTimePercent, "good")
-      + subjectMeters
-      + '<div class="meter-label"><span>Active work by priority</span><span>' + mix.total + "</span></div>"
-      + priorityBlock
-      + loadBlock
-      + '</section><section class="card"><div class="section-head"><h2>Upcoming deadlines</h2><a class="linkish" href="#calendar">Open calendar</a></div>' + upcomingHtml + "</section></div>"
-      + '<section class="card"><div class="section-head"><h2>Overdue</h2></div>' + overdueHtml + "</section>";
-
+      + '<div class="board"><div class="board-top">'
+      + kpiCard("kpi-total", "tone-blue", "Total Homework", assignments.length, escapeHtml(totalHint), sparkBars(subjectBars(false)))
+      + kpiCard("kpi-done", "tone-orange", "Completed Homework", stats.completed.length, escapeHtml(doneHint), sparkBars(subjectBars(true), "#12b886"))
+      + '<section class="panel upcoming-panel"><div class="panel-head"><h2>Upcoming Homework</h2><a class="linkish" href="#calendar">Calendar</a></div>' + upcomingMarkup(upcoming) + "</section>"
+      + kpiCard("kpi-grade", "tone-red", "Grade Average", gradeValue, escapeHtml(gradeHint), gradeSpark(grades))
+      + '<article class="panel kpi kpi-progress"><div class="kpi-top"><span class="kpi-icon tone-purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle></svg></span><span>Homework Progress</span></div><div class="progress-body"><div><strong class="kpi-value">' + stats.percent + '%</strong><span class="kpi-hint">' + stats.completed.length + " of " + assignments.length + ' complete</span></div>' + donut(stats.percent) + "</div></article>"
+      + '</div><div class="board-low">'
+      + '<section class="panel"><div class="panel-head"><div><h2>Homework Analytics</h2><p class="panel-sub">' + escapeHtml(series.caption) + '</p></div><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Weekly") + rangeBtn("month", "Monthly") + rangeBtn("year", "Yearly") + "</div></div>" + lineChart(series.points) + '<p class="chart-note">Each point is how many assignments are due in that period. Hover a dot to see the count.</p></section>'
+      + '<section class="panel"><div class="panel-head"><h2>Pending Homework</h2><select id="pending-scope" aria-label="Which pending assignments"><option value="week"' + (DASH.scope === "week" ? " selected" : "") + '>This week</option><option value="all"' + (DASH.scope === "all" ? " selected" : "") + ">All pending</option></select></div>" + weekStrip() + pendingMarkup(pending) + '<p class="chart-note">The ring fills as a due date gets closer. Today and overdue work sit at 100%.</p></section>'
+      + '</div><section class="panel"><div class="panel-head"><h2>All Homework</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Search..." value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Homework title</th><th>Date</th><th>Status</th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table></div></section></div>';
+    paintDashRows();
     animateBars(document.getElementById("view-dashboard"));
-  }
-
-  function statCard(label, value, hint, valueClass, iconClass) {
-    return '<article class="stat-card"><div class="stat-icon ' + (iconClass || "") + '" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5M4 19h16"></path><path d="M8 16l3-4 3 2 4-6"></path></svg></div><p class="stat-label">' + label + '</p><p class="stat-value ' + (valueClass || "") + '">' + value + '</p><p class="stat-hint">' + hint + "</p></article>";
   }
 
   function renderSubjectOptions() {
@@ -723,7 +946,7 @@
       list.innerHTML = emptyState("Nothing matches", "No assignments fit these filters. Clear them to see the full list.", "Clear filters", "clear-filters");
       return;
     }
-    list.innerHTML = '<div class="card-grid">' + rows.map(assignmentCard).join("") + "</div>";
+    list.innerHTML = homeworkTable(rows, "Nothing matches", "No assignments fit these filters. Clear them to see the full list.");
   }
 
   function clearFilters() {
@@ -733,6 +956,7 @@
     document.getElementById("filter-status").value = "all";
     document.getElementById("filter-upcoming").checked = false;
     document.getElementById("filter-search").value = "";
+    document.getElementById("global-search").value = "";
     renderAssignmentList();
   }
 
@@ -858,6 +1082,7 @@
           event.preventDefault();
           prefs.name = event.target.name.value.trim().slice(0, 40);
           savePrefs();
+          paintAvatar();
           closeModal();
           renderDashboard();
           toast(prefs.name ? "Hi, " + prefs.name + "." : "Name cleared.");
@@ -1300,6 +1525,10 @@
     if (action === "delete") askDelete(id);
     if (action === "edit-name") openNameModal();
     if (action === "clear-filters") clearFilters();
+    if (action === "dash-range") {
+      DASH.range = actionElement.getAttribute("data-range") || "month";
+      renderDashboard();
+    }
     if (action === "select-day") {
       calendar.selected = actionElement.getAttribute("data-date");
       renderCalendar();
@@ -1342,7 +1571,28 @@
     });
     document.getElementById("filter-search").addEventListener("input", function (event) {
       filters.search = event.target.value;
+      document.getElementById("global-search").value = filters.search;
       renderAssignmentList();
+    });
+    document.body.addEventListener("input", function (event) {
+      if (event.target.id === "dash-search") {
+        DASH.query = event.target.value;
+        paintDashRows();
+      }
+      if (event.target.id === "global-search") {
+        filters.search = event.target.value;
+        var pageSearch = document.getElementById("filter-search");
+        if (pageSearch) pageSearch.value = filters.search;
+        if (currentView() !== "assignments") {
+          if (location.hash !== "#assignments") location.hash = "assignments";
+        } else renderAssignmentList();
+      }
+    });
+    document.body.addEventListener("change", function (event) {
+      if (event.target.id === "pending-scope") {
+        DASH.scope = event.target.value === "all" ? "all" : "week";
+        renderDashboard();
+      }
     });
     document.getElementById("cal-prev").addEventListener("click", function () { shiftMonth(-1); });
     document.getElementById("cal-next").addEventListener("click", function () { shiftMonth(1); });

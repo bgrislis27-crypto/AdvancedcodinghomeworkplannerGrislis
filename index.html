@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="StudyHub is a homework planner for students. Track assignments, deadlines, study sessions, and grades in your browser.">
-  <meta name="theme-color" content="#070d1a">
+  <meta name="theme-color" content="#e8eaee">
   <title>StudyHub — Homework Planner</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c3aed'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 8H24v14H10.5A2.5 2.5 0 0 0 8 24.5V10.5z' fill='none' stroke='white' stroke-width='1.8'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 13H24' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f9f6e'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 8H24v14H10.5A2.5 2.5 0 0 0 8 24.5V10.5z' fill='none' stroke='white' stroke-width='1.8'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 13H24' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E">
   <script>
     try {
       var saved = JSON.parse(localStorage.getItem('studyhub.prefs') || '{}');
       if (saved.theme === 'light' || saved.theme === 'dark') {
         document.documentElement.setAttribute('data-theme', saved.theme);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', saved.theme === 'light' ? '#eef2f9' : '#070d1a');
+        if (meta) meta.setAttribute('content', saved.theme === 'light' ? '#e8eaee' : '#10141b');
       }
     } catch (error) {
-      /* Preferences stay at the default dark theme if storage is blocked. */
+      /* Preferences stay at the default light theme if storage is blocked. */
     }
   </script>
   <link rel="stylesheet" href="css/styles.css">
@@ -81,10 +81,14 @@
     <div class="backdrop" id="backdrop" hidden></div>
 
     <main class="main">
-      <header class="topbar">
+      <header class="topbar is-dashboard">
         <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
         </button>
+        <label class="global-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input id="global-search" type="search" placeholder="Search..." autocomplete="off" aria-label="Search assignments">
+        </label>
         <div class="topbar-titles">
           <h1 class="page-title" id="page-title">Dashboard</h1>
           <p class="page-sub" id="page-sub">Your day at a glance</p>
@@ -95,9 +99,12 @@
             <span id="mini-time">25:00</span>
             <span class="mode" id="mini-mode">Focus</span>
           </a>
-          <button type="button" class="icon-btn" id="theme-toggle-top" aria-label="Switch to light theme">
+          <button type="button" class="icon-btn" id="theme-toggle-top" aria-label="Switch to dark theme">
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"></path></svg>
+          </button>
+          <button type="button" class="avatar-btn" id="avatar-btn" data-action="edit-name" aria-label="Add your name">
+            <span id="avatar-initial">S</span>
           </button>
         </div>
       </header>
@@ -182,8 +189,8 @@
                 <svg class="timer-svg" viewBox="0 0 120 120" aria-hidden="true">
                   <defs>
                     <linearGradient id="timerGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#c4b5fd"></stop>
-                      <stop offset="100%" stop-color="#60a5fa"></stop>
+                      <stop offset="0%" stop-color="#6ee7b7"></stop>
+                      <stop offset="100%" stop-color="#0f9f6e"></stop>
                     </linearGradient>
                   </defs>
                   <circle cx="60" cy="60" r="52" class="timer-track"></circle>
