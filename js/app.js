@@ -508,7 +508,7 @@
     var light = prefs.theme === "light";
     document.documentElement.setAttribute("data-theme", prefs.theme);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", light ? "#e8eaee" : "#10141b");
+    if (meta) meta.setAttribute("content", light ? "#f3efe6" : "#16130f");
     paintAvatar();
     var label = light ? "Switch to dark theme" : "Switch to light theme";
     document.getElementById("theme-toggle").setAttribute("aria-pressed", String(light));
@@ -519,10 +519,9 @@
 
   function paintAvatar() {
     var name = prefs.name.trim();
-    var initial = name ? name.charAt(0).toUpperCase() : "S";
     var avatar = document.getElementById("avatar-initial");
     var button = document.getElementById("avatar-btn");
-    if (avatar) avatar.textContent = initial;
+    if (avatar) avatar.textContent = name || "Your name";
     if (button) button.setAttribute("aria-label", name ? "Change name, " + name : "Add your name");
   }
 
@@ -573,11 +572,11 @@
       else link.removeAttribute("aria-current");
     });
     var titles = {
-      dashboard: ["Dashboard", "Your day at a glance"],
-      assignments: ["Assignments", "Add, edit, and finish your work"],
-      calendar: ["Calendar", "See what is due and when"],
-      timer: ["Study Timer", "Focus in short sessions"],
-      grades: ["Grade Calculator", "Turn scores into an average"]
+      dashboard: ["Dashboard", formatLong(todayISO())],
+      assignments: ["Assignments", ""],
+      calendar: ["Calendar", ""],
+      timer: ["Timer", "Work, then take a break"],
+      grades: ["Grades", ""]
     };
     document.getElementById("page-title").textContent = titles[name][0];
     document.getElementById("page-sub").textContent = titles[name][1];
@@ -683,7 +682,7 @@
           value: assignments.filter(function (item) { return item.dueDate >= fromISO && item.dueDate <= toDate; }).length
         });
       }
-      return { points: points, caption: "Assignments due each week" };
+      return { points: points, caption: "How many are due" };
     }
     if (DASH.range === "year") {
       var year = today.getFullYear();
@@ -693,7 +692,7 @@
           value: assignments.filter(function (item) { return item.dueDate.slice(0, 4) === String(y); }).length
         });
       }
-      return { points: points, caption: "Assignments due each year" };
+      return { points: points, caption: "How many are due" };
     }
     for (var month = 11; month >= 0; month -= 1) {
       var date = new Date(today.getFullYear(), today.getMonth() - month, 1);
@@ -703,7 +702,7 @@
         value: assignments.filter(function (item) { return item.dueDate.slice(0, 7) === key; }).length
       });
     }
-    return { points: points, caption: "Assignments due each month" };
+    return { points: points, caption: "How many are due" };
   }
 
   function lineChart(points) {
@@ -742,8 +741,7 @@
       return '<circle class="line-dot" cx="' + coord.x.toFixed(1) + '" cy="' + coord.y.toFixed(1) + '" r="4.5"><title>' + escapeHtml(coord.label + ": " + coord.value) + "</title></circle>";
     }).join("");
     return '<svg class="line-chart" viewBox="0 0 ' + width + " " + height + '" role="img">' +
-      '<defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#12b886" stop-opacity="0.28"></stop><stop offset="100%" stop-color="#12b886" stop-opacity="0"></stop></linearGradient></defs>' +
-      grid + '<path d="' + area + '" fill="url(#areaFill)"></path><path d="' + line + '" fill="none" stroke="#12b886" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>' +
+      grid + '<path d="' + area + '" fill="currentColor" fill-opacity="0.12"></path><path d="' + line + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>' +
       dots + labels + "</svg>";
   }
 
@@ -794,7 +792,7 @@
   function statusPill(assignment) {
     if (assignment.completed) return '<span class="status-pill done">Done</span>';
     if (assignment.dueDate < todayISO()) return '<span class="status-pill late">Overdue</span>';
-    return '<span class="status-pill assigned">Assigned</span>';
+    return '<span class="status-pill assigned">Open</span>';
   }
 
   function tableRow(assignment) {
@@ -805,7 +803,7 @@
     if (!rows.length) {
       return '<div class="table-scroll"><table class="hw-table"><tbody><tr><td>' + emptyState(emptyTitle, emptyCopy, "", "") + "</td></tr></tbody></table></div>";
     }
-    return '<div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Homework title</th><th>Date</th><th>Status</th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody>' + rows.map(tableRow).join("") + "</tbody></table></div>";
+    return '<div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Title</th><th>Due</th><th></th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody>' + rows.map(tableRow).join("") + "</tbody></table></div>";
   }
 
   function dashRows() {
@@ -850,27 +848,33 @@
 
   function upcomingMarkup(items) {
     if (!items.length) {
-      return emptyState("Nothing coming up", assignments.length ? "No open assignments are due today or later." : "Add a due date and it will land here.", assignments.length ? "" : "Add assignment", "add");
+      return emptyState("Nothing soon", assignments.length ? "Nothing open is due today or later." : "Add something with a due date.", assignments.length ? "" : "Add assignment", "add");
     }
     return '<div class="up-list">' + items.map(function (assignment) {
-      var tone = subjectTone(assignment.subject);
-      return '<div class="up-row"><span class="subj-badge" style="--tone-bg:' + tone.bg + ";--tone-fg:" + tone.fg + '">' + escapeHtml(assignment.subject.slice(0, 1).toUpperCase()) + '</span><div class="up-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(formatDate(assignment.dueDate)) + '</span></div><div class="up-side"><span>' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + "</span><small>" + escapeHtml(assignment.subject) + "</small></div></div>";
+      return '<div class="up-row"><div class="up-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + " · " + escapeHtml(formatDate(assignment.dueDate)) + '</span></div><div class="up-side"><span>' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + "</span></div></div>";
     }).join("") + "</div>";
   }
 
   function pendingMarkup(items) {
     if (!items.length) {
-      var copy = DASH.scope === "week" ? "Nothing unfinished is due this week." : "Every assignment is checked off.";
-      return emptyState("No pending homework", assignments.length ? copy : "Add an assignment to start the list.", assignments.length ? "" : "Add assignment", "add");
+      var copy = DASH.scope === "week" ? "Nothing unfinished is due this week." : "The list is clear.";
+      return emptyState("All caught up", assignments.length ? copy : "Add an assignment to start.", assignments.length ? "" : "Add assignment", "add");
     }
     return '<div class="pend-list">' + items.map(function (assignment) {
-      var pressure = duePressure(assignment);
-      return '<div class="pend-row"><div class="pend-copy"><strong>' + escapeHtml(assignment.subject) + "</strong><span>" + escapeHtml(assignment.title) + "</span></div>" + miniRing(pressure) + "</div>";
+      return '<div class="pend-row"><div class="pend-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + '</span></div><span class="due-word">' + escapeHtml(relativeDue(assignment.dueDate)) + "</span></div>";
     }).join("") + "</div>";
   }
 
-  function kpiCard(className, tone, label, value, hint, extra) {
-    return '<article class="panel kpi ' + className + '"><div class="kpi-top"><span class="kpi-icon ' + tone + '" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg></span><span>' + label + '</span></div><div class="kpi-body"><div><strong class="kpi-value">' + value + '</strong><span class="kpi-hint">' + hint + "</span></div>" + extra + "</div></article>";
+  function kpiCard(className, label, value, hint) {
+    return '<article class="panel kpi ' + className + '"><p class="kpi-label">' + label + '</p><p class="kpi-value">' + value + '</p><p class="kpi-hint">' + hint + "</p></article>";
+  }
+
+  function heroLine(stats) {
+    if (!assignments.length) return "Nothing on the list yet.";
+    if (!stats.active.length) return "You’re done with this list.";
+    if (stats.overdue.length) return stats.overdue.length + " past due, " + stats.active.length + " still open.";
+    if (stats.dueToday.length) return (stats.dueToday.length === 1 ? "1 thing is due today." : stats.dueToday.length + " things are due today.");
+    return stats.active.length + " still open.";
   }
 
   function renderDashboard() {
@@ -882,24 +886,25 @@
       return DASH.scope === "all" || item.dueDate <= weekEnd;
     })).slice(0, 4);
     var series = chartSeries();
-    var totalHint = stats.overdue.length ? stats.overdue.length + " overdue" : "On your list";
-    var doneHint = assignments.length ? stats.percent + "% of your list" : "Nothing checked off yet";
+    var totalHint = stats.overdue.length ? stats.overdue.length + " overdue" : "on the list";
+    var doneHint = assignments.length ? stats.percent + "% finished" : "none yet";
     var gradeValue = summary ? summary.average.toFixed(0) + "%" : "—";
-    var gradeHint = summary ? summary.letter + " · " + summary.count + (summary.count === 1 ? " grade" : " grades") : "Add a grade";
+    var gradeHint = summary ? summary.letter + ", " + summary.count + (summary.count === 1 ? " grade" : " grades") : "no grades yet";
     var rangeBtn = function (range, label) {
       return '<button type="button" class="range-btn" data-action="dash-range" data-range="' + range + '" aria-pressed="' + (DASH.range === range ? "true" : "false") + '">' + label + "</button>";
     };
+    var dateLine = parseISO(todayISO()).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
     document.getElementById("view-dashboard").innerHTML = ''
-      + '<div class="board"><div class="board-top">'
-      + kpiCard("kpi-total", "tone-blue", "Total Homework", assignments.length, escapeHtml(totalHint), sparkBars(subjectBars(false)))
-      + kpiCard("kpi-done", "tone-orange", "Completed Homework", stats.completed.length, escapeHtml(doneHint), sparkBars(subjectBars(true), "#12b886"))
-      + '<section class="panel upcoming-panel"><div class="panel-head"><h2>Upcoming Homework</h2><a class="linkish" href="#calendar">Calendar</a></div>' + upcomingMarkup(upcoming) + "</section>"
-      + kpiCard("kpi-grade", "tone-red", "Grade Average", gradeValue, escapeHtml(gradeHint), gradeSpark(grades))
-      + '<article class="panel kpi kpi-progress"><div class="kpi-top"><span class="kpi-icon tone-purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle></svg></span><span>Homework Progress</span></div><div class="progress-body"><div><strong class="kpi-value">' + stats.percent + '%</strong><span class="kpi-hint">' + stats.completed.length + " of " + assignments.length + ' complete</span></div>' + donut(stats.percent) + "</div></article>"
+      + '<div class="board"><p class="dash-date">' + escapeHtml(dateLine) + "<span>" + escapeHtml(heroLine(stats)) + "</span></p><div class=\"board-top\">"
+      + kpiCard("kpi-total", "Assignments", assignments.length, escapeHtml(totalHint))
+      + kpiCard("kpi-done", "Finished", stats.completed.length, escapeHtml(doneHint))
+      + '<section class="panel upcoming-panel"><div class="panel-head"><h2>Coming up</h2><a class="linkish" href="#calendar">Calendar</a></div>' + upcomingMarkup(upcoming) + "</section>"
+      + kpiCard("kpi-grade", "Average", gradeValue, '<a class="linkish" href="#grades">' + escapeHtml(gradeHint) + "</a>")
+      + '<article class="panel kpi kpi-progress"><p class="kpi-label">So far</p>' + meter("", stats.completed.length + " of " + assignments.length, stats.percent) + "</article>"
       + '</div><div class="board-low">'
-      + '<section class="panel"><div class="panel-head"><div><h2>Homework Analytics</h2><p class="panel-sub">' + escapeHtml(series.caption) + '</p></div><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Weekly") + rangeBtn("month", "Monthly") + rangeBtn("year", "Yearly") + "</div></div>" + lineChart(series.points) + '<p class="chart-note">Each point is how many assignments are due in that period. Hover a dot to see the count.</p></section>'
-      + '<section class="panel"><div class="panel-head"><h2>Pending Homework</h2><select id="pending-scope" aria-label="Which pending assignments"><option value="week"' + (DASH.scope === "week" ? " selected" : "") + '>This week</option><option value="all"' + (DASH.scope === "all" ? " selected" : "") + ">All pending</option></select></div>" + weekStrip() + pendingMarkup(pending) + '<p class="chart-note">The ring fills as a due date gets closer. Today and overdue work sit at 100%.</p></section>'
-      + '</div><section class="panel"><div class="panel-head"><h2>All Homework</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Search..." value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Homework title</th><th>Date</th><th>Status</th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table></div></section></div>';
+      + '<section class="panel"><div class="panel-head"><div><h2>Due dates</h2><p class="panel-sub">' + escapeHtml(series.caption) + '</p></div><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Week") + rangeBtn("month", "Month") + rangeBtn("year", "Year") + "</div></div>" + lineChart(series.points) + "</section>"
+      + '<section class="panel"><div class="panel-head"><h2>Still open</h2><select id="pending-scope" aria-label="Which open assignments"><option value="week"' + (DASH.scope === "week" ? " selected" : "") + '>This week</option><option value="all"' + (DASH.scope === "all" ? " selected" : "") + ">Everything open</option></select></div>" + weekStrip() + pendingMarkup(pending) + "</section>"
+      + '</div><section class="panel"><div class="panel-head"><h2>The list</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Filter this list" value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Title</th><th>Due</th><th></th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table></div></section></div>';
     paintDashRows();
     animateBars(document.getElementById("view-dashboard"));
   }

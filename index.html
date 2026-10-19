@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="StudyHub is a homework planner for students. Track assignments, deadlines, study sessions, and grades in your browser.">
-  <meta name="theme-color" content="#e8eaee">
+  <meta name="theme-color" content="#f3efe6">
   <title>StudyHub — Homework Planner</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f9f6e'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 8H24v14H10.5A2.5 2.5 0 0 0 8 24.5V10.5z' fill='none' stroke='white' stroke-width='1.8'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 13H24' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23243f73'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 8H24v14H10.5A2.5 2.5 0 0 0 8 24.5V10.5z' fill='none' stroke='%23f7f4ee' stroke-width='1.8'/%3E%3Cpath d='M8 10.5A2.5 2.5 0 0 1 10.5 13H24' fill='none' stroke='%23f7f4ee' stroke-width='1.8'/%3E%3C/svg%3E">
   <script>
     try {
       var saved = JSON.parse(localStorage.getItem('studyhub.prefs') || '{}');
       if (saved.theme === 'light' || saved.theme === 'dark') {
         document.documentElement.setAttribute('data-theme', saved.theme);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', saved.theme === 'light' ? '#e8eaee' : '#10141b');
+        if (meta) meta.setAttribute('content', saved.theme === 'light' ? '#f3efe6' : '#16130f');
       }
     } catch (error) {
       /* Preferences stay at the default light theme if storage is blocked. */
@@ -26,19 +26,11 @@
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5z"></path>
-            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 9H20"></path>
-          </svg>
-        </span>
         <span class="brand-text">
           <strong>StudyHub</strong>
-          <small>Homework planner</small>
+          <small>for homework</small>
         </span>
       </div>
-
-      <p class="nav-kicker">Menu</p>
       <nav class="nav" aria-label="Primary">
         <a class="nav-btn active" href="#dashboard" data-view="dashboard" title="Dashboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
@@ -55,16 +47,15 @@
         </a>
         <a class="nav-btn" href="#timer" data-view="timer" title="Study Timer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 3h6"></path></svg>
-          <span class="nav-label">Study Timer</span>
+          <span class="nav-label">Timer</span>
         </a>
         <a class="nav-btn" href="#grades" data-view="grades" title="Grade Calculator">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9M12 16V5M17 16v-4"></path></svg>
-          <span class="nav-label">Grade Calculator</span>
+          <span class="nav-label">Grades</span>
         </a>
       </nav>
 
       <div class="sidebar-foot">
-        <p class="sidebar-note">Saved on this device. No account needed.</p>
         <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" aria-label="Switch to light theme">
           <span class="theme-icon" aria-hidden="true">
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -87,7 +78,7 @@
         </button>
         <label class="global-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-          <input id="global-search" type="search" placeholder="Search..." autocomplete="off" aria-label="Search assignments">
+          <input id="global-search" type="search" placeholder="Find an assignment" autocomplete="off" aria-label="Search assignments">
         </label>
         <div class="topbar-titles">
           <h1 class="page-title" id="page-title">Dashboard</h1>
@@ -189,8 +180,8 @@
                 <svg class="timer-svg" viewBox="0 0 120 120" aria-hidden="true">
                   <defs>
                     <linearGradient id="timerGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#6ee7b7"></stop>
-                      <stop offset="100%" stop-color="#0f9f6e"></stop>
+                      <stop offset="0%" stop-color="#8ea4cc"></stop>
+                      <stop offset="100%" stop-color="#243f73"></stop>
                     </linearGradient>
                   </defs>
                   <circle cx="60" cy="60" r="52" class="timer-track"></circle>
