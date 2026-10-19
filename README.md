@@ -16,17 +16,17 @@ Then visit `http://localhost:8080`.
 
 ## What you can do
 
-- See today's date, active work, overdue assignments, and upcoming deadlines on the dashboard.
+- See homework totals, your grade average, progress, an analytics chart, upcoming work, and a homework table on the dashboard.
 - Add an assignment with a title, subject, description, due date, priority, and estimated time.
 - Edit an assignment, delete it, or mark it complete. Sample assignments are included and can be changed or removed.
 - Browse a month calendar and open any day to see what is due.
 - Filter by subject, priority, completed or active tasks, and work due today or later. Search matches the title, subject, and description.
-- Watch progress bars for overall completion, on-time work, each subject, priority, and remaining study time.
+- Watch a completion ring, due-date rings, and a chart of how many assignments are due each week, month, or year.
 - Run a Pomodoro timer with focus, short break, and long break modes. Start, pause, and reset all work, and the session length is saved.
 - Enter grades and see a letter and a numeric average. Weights are optional.
-- Switch between dark and light themes.
+- Switch between light and dark themes. Light is the default until you change it.
 
-The dashboard greeting can use your name. That name stays in this browser only.
+Your name stays in this browser only. The circle in the top bar shows its first letter, and you can change the name from there.
 
 ## Where data is saved
 
