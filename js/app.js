@@ -1,4 +1,4 @@
-/* StudyHub
+/* UPlanner
    Browser-only homework planner. Data lives in localStorage.
    Sections: storage, dates, stats, theme, toasts, assignments,
    dashboard, calendar, timer, grades, events. */
@@ -580,7 +580,7 @@
     };
     document.getElementById("page-title").textContent = titles[name][0];
     document.getElementById("page-sub").textContent = titles[name][1];
-    document.title = titles[name][0] + " · StudyHub";
+    document.title = titles[name][0] + " · UPlanner";
     document.querySelector(".topbar").classList.toggle("is-dashboard", name === "dashboard");
     var globalSearch = document.getElementById("global-search");
     if (globalSearch && document.activeElement !== globalSearch) globalSearch.value = filters.search;

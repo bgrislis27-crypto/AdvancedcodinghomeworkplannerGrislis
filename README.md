@@ -1,6 +1,6 @@
-# StudyHub
+# UPlanner
 
-StudyHub is a homework planner that runs entirely in your browser. It keeps assignments, grades, a study timer, and your theme on this device. There is no account, server, or external service.
+UPlanner is a homework planner that runs entirely in your browser. It keeps assignments, grades, a study timer, and your theme on this device. There is no account, server, or external service.
 
 ## Run it
 
@@ -30,7 +30,7 @@ Your name stays in this browser only. The circle in the top bar shows its first 
 
 ## Where data is saved
 
-StudyHub uses the browser's local storage:
+UPlanner uses the browser's local storage:
 
 - `studyhub.assignments`
 - `studyhub.grades`
