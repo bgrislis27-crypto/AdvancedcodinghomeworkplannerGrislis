@@ -1544,9 +1544,74 @@ select.is-set, .toggle.is-set {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 8px 0;
   border-top: 1px solid var(--line);
 }
+
+.row-open, .title-btn, .text-btn, .sort-btn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.row-open { flex: 1; min-width: 0; }
+
+.row-open:hover strong, .title-btn:hover strong, .text-btn:hover { color: var(--accent); }
+
+.title-btn { display: block; width: 100%; }
+
+.title-btn strong, .title-btn .desc { display: block; }
+
+.sort-btn { font-family: var(--serif); font-weight: 600; font-size: 0.92rem; }
+
+.sort-btn.is-on { color: var(--accent); }
+
+.check-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  flex: none;
+}
+
+.check-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+button.kpi {
+  width: 100%;
+  display: block;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button.kpi:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+
+button.week-day {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+button.week-day:hover strong { background: var(--accent-soft); }
+
+.line-hit { cursor: pointer; }
+
+.line-hit-pad { fill: transparent; }
+
+.line-hit:hover .line-dot { stroke-width: 3.5; }
 
 .up-list .up-row:first-child, .pend-list .pend-row:first-child { border-top: 0; padding-top: 4px; }
 

@@ -36,7 +36,8 @@
   var assignments = [];
   var grades = [];
   var prefs = {};
-  var filters = { subject: "all", priority: "all", status: "all", upcoming: false, search: "" };
+  var filters = { subject: "all", priority: "all", status: "all", upcoming: false, search: "", dueFrom: "", dueTo: "" };
+  var listSort = { key: "", dir: "asc" };
   var calendar = null;
   var highlightId = null;
   var editingGradeId = null;
@@ -373,6 +374,8 @@
     if (rules.status === "active" && assignment.completed) return false;
     if (rules.status === "completed" && !assignment.completed) return false;
     if (rules.upcoming && assignment.dueDate < todayISO()) return false;
+    if (rules.dueFrom && assignment.dueDate < rules.dueFrom) return false;
+    if (rules.dueTo && assignment.dueDate > rules.dueTo) return false;
     var query = (rules.search || "").trim().toLowerCase();
     if (query) {
       var blob = (assignment.title + " " + assignment.subject + " " + assignment.description).toLowerCase();
@@ -381,8 +384,23 @@
     return true;
   }
 
+  function orderedAssignments(list) {
+    if (!listSort.key) return sortAssignments(list);
+    var rank = { low: 1, medium: 2, high: 3 };
+    return list.slice().sort(function (a, b) {
+      var result = 0;
+      if (listSort.key === "subject") result = a.subject.localeCompare(b.subject);
+      else if (listSort.key === "title") result = a.title.localeCompare(b.title);
+      else if (listSort.key === "priority") result = (rank[a.priority] || 0) - (rank[b.priority] || 0);
+      else if (listSort.key === "time") result = a.estimatedMinutes - b.estimatedMinutes;
+      else result = a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0;
+      if (!result) result = a.title.localeCompare(b.title);
+      return listSort.dir === "desc" ? -result : result;
+    });
+  }
+
   function filteredAssignments() {
-    return sortAssignments(assignments.filter(function (assignment) {
+    return orderedAssignments(assignments.filter(function (assignment) {
       return matchesFilters(assignment);
     }));
   }
@@ -679,30 +697,37 @@
         var toDate = toISO(to);
         points.push({
           label: (from.getMonth() + 1) + "/" + from.getDate(),
+          from: fromISO,
+          to: toDate,
           value: assignments.filter(function (item) { return item.dueDate >= fromISO && item.dueDate <= toDate; }).length
         });
       }
-      return { points: points, caption: "How many are due" };
+      return { points: points, caption: "Click a point to open those assignments" };
     }
     if (DASH.range === "year") {
       var year = today.getFullYear();
       for (var y = year - 4; y <= year; y += 1) {
         points.push({
           label: String(y),
+          from: y + "-01-01",
+          to: y + "-12-31",
           value: assignments.filter(function (item) { return item.dueDate.slice(0, 4) === String(y); }).length
         });
       }
-      return { points: points, caption: "How many are due" };
+      return { points: points, caption: "Click a point to open those assignments" };
     }
     for (var month = 11; month >= 0; month -= 1) {
       var date = new Date(today.getFullYear(), today.getMonth() - month, 1);
       var key = monthStamp(date);
+      var end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       points.push({
         label: date.toLocaleDateString(undefined, { month: "short" }),
+        from: toISO(date),
+        to: toISO(end),
         value: assignments.filter(function (item) { return item.dueDate.slice(0, 7) === key; }).length
       });
     }
-    return { points: points, caption: "How many are due" };
+    return { points: points, caption: "Click a point to open those assignments" };
   }
 
   function lineChart(points) {
@@ -720,7 +745,7 @@
     var coords = points.map(function (point, index) {
       var x = padL + (points.length === 1 ? innerW / 2 : (innerW * index) / (points.length - 1));
       var y = padT + innerH - (point.value / top) * innerH;
-      return { x: x, y: y, label: point.label, value: point.value };
+      return { x: x, y: y, label: point.label, value: point.value, from: point.from || "", to: point.to || "" };
     });
     var line = coords.map(function (coord, index) {
       return (index ? "L" : "M") + coord.x.toFixed(1) + " " + coord.y.toFixed(1);
@@ -738,7 +763,7 @@
       return '<text class="axis" x="' + coord.x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="middle">' + escapeHtml(coord.label) + "</text>";
     }).join("");
     var dots = coords.map(function (coord) {
-      return '<circle class="line-dot" cx="' + coord.x.toFixed(1) + '" cy="' + coord.y.toFixed(1) + '" r="4.5"><title>' + escapeHtml(coord.label + ": " + coord.value) + "</title></circle>";
+      return '<g class="line-hit" data-action="chart-range" data-from="' + escapeHtml(coord.from) + '" data-to="' + escapeHtml(coord.to) + '" tabindex="0" role="button" aria-label="' + escapeHtml(coord.label + ", " + coord.value) + '"><circle class="line-hit-pad" cx="' + coord.x.toFixed(1) + '" cy="' + coord.y.toFixed(1) + '" r="12"></circle><circle class="line-dot" cx="' + coord.x.toFixed(1) + '" cy="' + coord.y.toFixed(1) + '" r="4.5"><title>' + escapeHtml(coord.label + ": " + coord.value) + "</title></circle></g>";
     }).join("");
     return '<svg class="line-chart" viewBox="0 0 ' + width + " " + height + '" role="img">' +
       grid + '<path d="' + area + '" fill="currentColor" fill-opacity="0.12"></path><path d="' + line + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>' +
@@ -795,20 +820,30 @@
     return '<span class="status-pill assigned">Open</span>';
   }
 
+  function sortHeader(key, label) {
+    var on = listSort.key === key;
+    var mark = on ? (listSort.dir === "asc" ? " ↑" : " ↓") : "";
+    return '<th><button type="button" class="sort-btn' + (on ? " is-on" : "") + '" data-action="sort" data-sort="' + key + '">' + label + mark + "</button></th>";
+  }
+
+  function tableHead() {
+    return "<thead><tr>" + sortHeader("subject", "Subject") + sortHeader("title", "Title") + sortHeader("due", "Due") + "<th></th>" + sortHeader("time", "Time") + sortHeader("priority", "Priority") + "<th></th></tr></thead>";
+  }
+
   function tableRow(assignment) {
-    return '<tr class="' + (assignment.completed ? "is-done" : "") + (assignment.id === highlightId ? " just-added" : "") + '"><td>' + escapeHtml(assignment.subject) + '</td><td><strong>' + escapeHtml(assignment.title) + "</strong>" + (assignment.description ? '<span class="desc">' + escapeHtml(assignment.description) + "</span>" : "") + "</td><td>" + escapeHtml(shortDate(assignment.dueDate)) + "</td><td>" + statusPill(assignment) + '</td><td class="marks">' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + '</td><td class="priority-text priority-' + assignment.priority + '">' + assignment.priority + '</td><td class="row-actions"><button type="button" class="btn btn-small ' + (assignment.completed ? "btn-ghost" : "btn-success") + '" data-action="toggle-complete" data-id="' + assignment.id + '">' + (assignment.completed ? "Reopen" : "Done") + '</button><button type="button" class="btn btn-small btn-ghost" data-action="edit" data-id="' + assignment.id + '">Edit</button><button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + assignment.id + '">Delete</button></td></tr>';
+    return '<tr class="' + (assignment.completed ? "is-done" : "") + (assignment.id === highlightId ? " just-added" : "") + '"><td><button type="button" class="text-btn" data-action="filter-subject" data-subject="' + escapeHtml(assignment.subject) + '">' + escapeHtml(assignment.subject) + '</button></td><td><button type="button" class="title-btn" data-action="edit" data-id="' + assignment.id + '"><strong>' + escapeHtml(assignment.title) + "</strong>" + (assignment.description ? '<span class="desc">' + escapeHtml(assignment.description) + "</span>" : "") + "</button></td><td>" + escapeHtml(shortDate(assignment.dueDate)) + "</td><td>" + statusPill(assignment) + '</td><td class="marks">' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + '</td><td class="priority-text priority-' + assignment.priority + '">' + assignment.priority + '</td><td class="row-actions"><button type="button" class="btn btn-small ' + (assignment.completed ? "btn-ghost" : "btn-success") + '" data-action="toggle-complete" data-id="' + assignment.id + '">' + (assignment.completed ? "Reopen" : "Done") + '</button><button type="button" class="btn btn-small btn-ghost" data-action="edit" data-id="' + assignment.id + '">Edit</button><button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + assignment.id + '">Delete</button></td></tr>';
   }
 
   function homeworkTable(rows, emptyTitle, emptyCopy) {
     if (!rows.length) {
       return '<div class="table-scroll"><table class="hw-table"><tbody><tr><td>' + emptyState(emptyTitle, emptyCopy, "", "") + "</td></tr></tbody></table></div>";
     }
-    return '<div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Title</th><th>Due</th><th></th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody>' + rows.map(tableRow).join("") + "</tbody></table></div>";
+    return '<div class="table-scroll"><table class="hw-table">' + tableHead() + "<tbody>" + rows.map(tableRow).join("") + "</tbody></table></div>";
   }
 
   function dashRows() {
     var query = DASH.query.trim().toLowerCase();
-    return sortAssignments(assignments.filter(function (assignment) {
+    return orderedAssignments(assignments.filter(function (assignment) {
       if (!query) return true;
       var blob = (assignment.title + " " + assignment.subject + " " + assignment.description).toLowerCase();
       return blob.indexOf(query) !== -1;
@@ -841,7 +876,7 @@
       date.setDate(start.getDate() + i);
       var iso = toISO(date);
       var due = assignments.some(function (item) { return !item.completed && item.dueDate === iso; });
-      html += '<div class="week-day' + (iso === todayISO() ? " is-today" : "") + '"><span>' + names[i] + "</span><strong>" + date.getDate() + "</strong>" + (due ? "<i></i>" : "") + "</div>";
+      html += '<button type="button" class="week-day' + (iso === todayISO() ? " is-today" : "") + '" data-action="open-day" data-date="' + iso + '"><span>' + names[i] + "</span><strong>" + date.getDate() + "</strong>" + (due ? "<i></i>" : "") + "</button>";
     }
     return html + "</div>";
   }
@@ -851,7 +886,7 @@
       return emptyState("Nothing soon", assignments.length ? "Nothing open is due today or later." : "Add something with a due date.", assignments.length ? "" : "Add assignment", "add");
     }
     return '<div class="up-list">' + items.map(function (assignment) {
-      return '<div class="up-row"><div class="up-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + " · " + escapeHtml(formatDate(assignment.dueDate)) + '</span></div><div class="up-side"><span>' + escapeHtml(formatMinutes(assignment.estimatedMinutes)) + "</span></div></div>";
+      return '<div class="up-row"><button type="button" class="row-open" data-action="edit" data-id="' + assignment.id + '"><span class="up-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + " · " + escapeHtml(formatDate(assignment.dueDate)) + '</span></span></button><button type="button" class="check-btn" data-action="toggle-complete" data-id="' + assignment.id + '" aria-label="Mark ' + escapeHtml(assignment.title) + ' done">Done</button></div>';
     }).join("") + "</div>";
   }
 
@@ -861,12 +896,12 @@
       return emptyState("All caught up", assignments.length ? copy : "Add an assignment to start.", assignments.length ? "" : "Add assignment", "add");
     }
     return '<div class="pend-list">' + items.map(function (assignment) {
-      return '<div class="pend-row"><div class="pend-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + '</span></div><span class="due-word">' + escapeHtml(relativeDue(assignment.dueDate)) + "</span></div>";
+      return '<div class="pend-row"><button type="button" class="row-open" data-action="edit" data-id="' + assignment.id + '"><span class="pend-copy"><strong>' + escapeHtml(assignment.title) + "</strong><span>" + escapeHtml(assignment.subject) + '</span></span></button><span class="due-word">' + escapeHtml(relativeDue(assignment.dueDate)) + '</span><button type="button" class="check-btn" data-action="toggle-complete" data-id="' + assignment.id + '" aria-label="Mark ' + escapeHtml(assignment.title) + ' done">Done</button></div>';
     }).join("") + "</div>";
   }
 
-  function kpiCard(className, label, value, hint) {
-    return '<article class="panel kpi ' + className + '"><p class="kpi-label">' + label + '</p><p class="kpi-value">' + value + '</p><p class="kpi-hint">' + hint + "</p></article>";
+  function kpiCard(className, label, value, hint, action) {
+    return '<button type="button" class="panel kpi ' + className + '" data-action="' + action + '"><p class="kpi-label">' + label + '</p><p class="kpi-value">' + value + '</p><p class="kpi-hint">' + hint + "</p></button>";
   }
 
   function heroLine(stats) {
@@ -896,15 +931,15 @@
     var dateLine = parseISO(todayISO()).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
     document.getElementById("view-dashboard").innerHTML = ''
       + '<div class="board"><p class="dash-date">' + escapeHtml(dateLine) + "<span>" + escapeHtml(heroLine(stats)) + "</span></p><div class=\"board-top\">"
-      + kpiCard("kpi-total", "Assignments", assignments.length, escapeHtml(totalHint))
-      + kpiCard("kpi-done", "Finished", stats.completed.length, escapeHtml(doneHint))
+      + kpiCard("kpi-total", "Assignments", assignments.length, escapeHtml(totalHint), "open-all")
+      + kpiCard("kpi-done", "Finished", stats.completed.length, escapeHtml(doneHint), "open-done")
       + '<section class="panel upcoming-panel"><div class="panel-head"><h2>Coming up</h2><a class="linkish" href="#calendar">Calendar</a></div>' + upcomingMarkup(upcoming) + "</section>"
-      + kpiCard("kpi-grade", "Average", gradeValue, '<a class="linkish" href="#grades">' + escapeHtml(gradeHint) + "</a>")
-      + '<article class="panel kpi kpi-progress"><p class="kpi-label">So far</p>' + meter("", stats.completed.length + " of " + assignments.length, stats.percent) + "</article>"
+      + kpiCard("kpi-grade", "Average", gradeValue, escapeHtml(gradeHint), "open-grades")
+      + '<button type="button" class="panel kpi kpi-progress" data-action="open-active"><p class="kpi-label">So far</p>' + meter("", stats.completed.length + " of " + assignments.length, stats.percent) + "</button>"
       + '</div><div class="board-low">'
       + '<section class="panel"><div class="panel-head"><div><h2>Due dates</h2><p class="panel-sub">' + escapeHtml(series.caption) + '</p></div><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Week") + rangeBtn("month", "Month") + rangeBtn("year", "Year") + "</div></div>" + lineChart(series.points) + "</section>"
       + '<section class="panel"><div class="panel-head"><h2>Still open</h2><select id="pending-scope" aria-label="Which open assignments"><option value="week"' + (DASH.scope === "week" ? " selected" : "") + '>This week</option><option value="all"' + (DASH.scope === "all" ? " selected" : "") + ">Everything open</option></select></div>" + weekStrip() + pendingMarkup(pending) + "</section>"
-      + '</div><section class="panel"><div class="panel-head"><h2>The list</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Filter this list" value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table"><thead><tr><th>Subject</th><th>Title</th><th>Due</th><th></th><th>Time</th><th>Priority</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table></div></section></div>';
+      + '</div><section class="panel"><div class="panel-head"><h2>The list</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Filter this list" value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table">' + tableHead() + '<tbody id="dash-rows"></tbody></table></div></section></div>';
     paintDashRows();
     animateBars(document.getElementById("view-dashboard"));
   }
@@ -936,9 +971,35 @@
     return '<article class="task-card priority-' + assignment.priority + (assignment.completed ? " is-done" : "") + (overdue ? " is-overdue" : "") + (assignment.id === highlightId ? " just-added" : "") + '"><div class="task-top"><span class="subject-pill" style="--pill:' + subjectColor(assignment.subject) + '">' + escapeHtml(assignment.subject) + '</span><span class="priority-pill priority-' + assignment.priority + '">' + assignment.priority + "</span></div><h3>" + escapeHtml(assignment.title) + "</h3><p class=\"task-meta\">" + escapeHtml(dueLabel(assignment)) + " · " + formatMinutes(assignment.estimatedMinutes) + (overdue ? ' <span class="chip-overdue">Overdue</span>' : "") + "</p>" + (assignment.description ? '<p class="task-desc" title="' + escapeHtml(assignment.description) + '">' + escapeHtml(assignment.description) + "</p>" : "") + '<div class="task-actions"><button type="button" class="btn btn-small ' + (assignment.completed ? "btn-ghost" : "btn-success") + '" data-action="toggle-complete" data-id="' + assignment.id + '">' + (assignment.completed ? "Reopen" : "Complete") + '</button><button type="button" class="btn btn-small btn-ghost" data-action="edit" data-id="' + assignment.id + '">Edit</button><button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="' + assignment.id + '">Delete</button></div></article>';
   }
 
+  function syncFilterControls() {
+    document.getElementById("filter-priority").value = filters.priority;
+    document.getElementById("filter-status").value = filters.status;
+    document.getElementById("filter-upcoming").checked = !!filters.upcoming;
+    document.getElementById("filter-search").value = filters.search;
+    var globalSearch = document.getElementById("global-search");
+    if (globalSearch && document.activeElement !== globalSearch) globalSearch.value = filters.search;
+  }
+
+  function openFiltered(patch) {
+    filters.subject = "all";
+    filters.priority = "all";
+    filters.status = "all";
+    filters.upcoming = false;
+    filters.search = "";
+    filters.dueFrom = "";
+    filters.dueTo = "";
+    if (patch) Object.assign(filters, patch);
+    if (location.hash !== "#assignments") location.hash = "assignments";
+    else {
+      renderSubjectOptions();
+      renderAssignmentList();
+    }
+  }
+
   function renderAssignmentList() {
     var list = document.getElementById("assignment-list");
     var count = document.getElementById("list-count");
+    syncFilterControls();
     syncFilterStyles();
     if (!assignments.length) {
       count.textContent = "No assignments yet";
@@ -946,7 +1007,8 @@
       return;
     }
     var rows = filteredAssignments();
-    count.textContent = "Showing " + rows.length + " of " + assignments.length;
+    var rangeNote = filters.dueFrom && filters.dueTo ? " · " + formatDate(filters.dueFrom) + " to " + formatDate(filters.dueTo) : "";
+    count.textContent = "Showing " + rows.length + " of " + assignments.length + rangeNote;
     if (!rows.length) {
       list.innerHTML = emptyState("Nothing matches", "No assignments fit these filters. Clear them to see the full list.", "Clear filters", "clear-filters");
       return;
@@ -955,7 +1017,7 @@
   }
 
   function clearFilters() {
-    filters = { subject: "all", priority: "all", status: "all", upcoming: false, search: "" };
+    filters = { subject: "all", priority: "all", status: "all", upcoming: false, search: "", dueFrom: "", dueTo: "" };
     document.getElementById("filter-subject").value = "all";
     document.getElementById("filter-priority").value = "all";
     document.getElementById("filter-status").value = "all";
@@ -1534,6 +1596,39 @@
       DASH.range = actionElement.getAttribute("data-range") || "month";
       renderDashboard();
     }
+    if (action === "sort") {
+      var key = actionElement.getAttribute("data-sort") || "due";
+      if (listSort.key === key) listSort.dir = listSort.dir === "asc" ? "desc" : "asc";
+      else {
+        listSort.key = key;
+        listSort.dir = key === "priority" ? "desc" : "asc";
+      }
+      if (currentView() === "dashboard") renderDashboard();
+      else renderAssignmentList();
+    }
+    if (action === "open-all") openFiltered();
+    if (action === "open-done") openFiltered({ status: "completed" });
+    if (action === "open-active") openFiltered({ status: "active" });
+    if (action === "open-grades") {
+      if (location.hash !== "#grades") location.hash = "grades";
+    }
+    if (action === "filter-subject") openFiltered({ subject: actionElement.getAttribute("data-subject") || "all" });
+    if (action === "chart-range") {
+      openFiltered({
+        dueFrom: actionElement.getAttribute("data-from") || "",
+        dueTo: actionElement.getAttribute("data-to") || ""
+      });
+    }
+    if (action === "open-day") {
+      var date = actionElement.getAttribute("data-date");
+      ensureCalendar();
+      var parsed = parseISO(date);
+      calendar.year = parsed.getFullYear();
+      calendar.month = parsed.getMonth();
+      calendar.selected = date;
+      if (location.hash !== "#calendar") location.hash = "calendar";
+      else renderCalendar();
+    }
     if (action === "select-day") {
       calendar.selected = actionElement.getAttribute("data-date");
       renderCalendar();
@@ -1646,7 +1741,20 @@
     document.getElementById("grade-cancel").addEventListener("click", resetGradeForm);
     document.getElementById("clear-grades").addEventListener("click", askClearGrades);
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && document.getElementById("modal-root").innerHTML) closeModal();
+      if (event.key === "Escape" && document.getElementById("modal-root").innerHTML) {
+        closeModal();
+        return;
+      }
+      var typing = event.target && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (document.getElementById("modal-root").innerHTML) return;
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        openAssignmentModal(null, null);
+      } else if (event.key === "/") {
+        event.preventDefault();
+        document.getElementById("global-search").focus();
+      }
     });
     window.addEventListener("hashchange", function () { showView(currentView()); });
   }
