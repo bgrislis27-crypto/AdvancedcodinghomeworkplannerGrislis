@@ -549,14 +549,48 @@
     applyTheme();
   }
 
+  function layoutIsNarrow() {
+    var stage = document.getElementById("device-stage");
+    if (document.documentElement.getAttribute("data-device") === "phone") return true;
+    if (stage && stage.getBoundingClientRect().width <= 800) return true;
+    return window.matchMedia("(max-width: 800px)").matches;
+  }
+
+  function paintDeviceToggle() {
+    var button = document.getElementById("device-toggle");
+    if (!button) return;
+    var on = document.documentElement.getAttribute("data-device") === "phone";
+    var realPhone = window.matchMedia("(max-width: 800px)").matches;
+    button.hidden = realPhone;
+    button.setAttribute("aria-pressed", String(on));
+    button.setAttribute("aria-label", on ? "Leave phone preview" : "Preview on a phone");
+  }
+
+  function placeDeviceToggle(on) {
+    var button = document.getElementById("device-toggle");
+    var label = document.getElementById("preview-label");
+    if (!button || !label) return;
+    if (on) label.appendChild(button);
+    else document.querySelector(".top-actions").insertBefore(button, document.getElementById("theme-toggle-top"));
+    label.hidden = !on;
+  }
+
+  function setPhonePreview(on) {
+    if (on && window.matchMedia("(max-width: 800px)").matches) on = false;
+    document.documentElement.setAttribute("data-device", on ? "phone" : "desktop");
+    try { sessionStorage.setItem("studyhub.device", on ? "phone" : "desktop"); } catch (error) { /* Preference is optional. */ }
+    placeDeviceToggle(on);
+    setSidebar(false);
+    paintDeviceToggle();
+  }
+
   function setSidebar(open) {
     var sidebar = document.getElementById("sidebar");
     sidebar.classList.toggle("open", open);
     document.getElementById("backdrop").hidden = !open;
     document.getElementById("menu-btn").setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("nav-open", open);
-    var mobile = window.matchMedia("(max-width: 800px)").matches;
-    if (mobile && !open) sidebar.setAttribute("inert", "");
+    if (layoutIsNarrow() && !open) sidebar.setAttribute("inert", "");
     else sidebar.removeAttribute("inert");
   }
 
@@ -1644,9 +1678,15 @@
       setSidebar(open);
     });
     document.getElementById("backdrop").addEventListener("click", function () { setSidebar(false); });
+    document.getElementById("device-toggle").addEventListener("click", function () {
+      setPhonePreview(document.documentElement.getAttribute("data-device") !== "phone");
+    });
     window.addEventListener("resize", function () {
-      var mobile = window.matchMedia("(max-width: 800px)").matches;
-      if (!mobile) setSidebar(false);
+      if (window.matchMedia("(max-width: 800px)").matches && document.documentElement.getAttribute("data-device") === "phone") {
+        setPhonePreview(false);
+      }
+      paintDeviceToggle();
+      if (!layoutIsNarrow()) setSidebar(false);
       else setSidebar(document.getElementById("sidebar").classList.contains("open"));
     });
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
@@ -1766,6 +1806,10 @@
     ensureSessionDay();
     timer.remaining = prefs.durations.focus * 60;
     applyTheme();
+    try {
+      if (sessionStorage.getItem("studyhub.device") === "phone") setPhonePreview(true);
+    } catch (error) { /* Preview starts on the full page if storage is blocked. */ }
+    paintDeviceToggle();
     bindEvents();
     updateNavBadge();
     updateTimerDom({ full: true });
