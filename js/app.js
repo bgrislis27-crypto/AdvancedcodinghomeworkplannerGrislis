@@ -736,7 +736,7 @@
           value: assignments.filter(function (item) { return item.dueDate >= fromISO && item.dueDate <= toDate; }).length
         });
       }
-      return { points: points, caption: "Click a point to open those assignments" };
+      return { points: points, caption: "" };
     }
     if (DASH.range === "year") {
       var year = today.getFullYear();
@@ -748,7 +748,7 @@
           value: assignments.filter(function (item) { return item.dueDate.slice(0, 4) === String(y); }).length
         });
       }
-      return { points: points, caption: "Click a point to open those assignments" };
+      return { points: points, caption: "" };
     }
     for (var month = 11; month >= 0; month -= 1) {
       var date = new Date(today.getFullYear(), today.getMonth() - month, 1);
@@ -761,7 +761,7 @@
         value: assignments.filter(function (item) { return item.dueDate.slice(0, 7) === key; }).length
       });
     }
-    return { points: points, caption: "Click a point to open those assignments" };
+    return { points: points, caption: "" };
   }
 
   function lineChart(points) {
@@ -955,7 +955,7 @@
       return DASH.scope === "all" || item.dueDate <= weekEnd;
     })).slice(0, 4);
     var series = chartSeries();
-    var totalHint = stats.overdue.length ? stats.overdue.length + " overdue" : "on the list";
+    var totalHint = stats.overdue.length ? stats.overdue.length + " overdue" : stats.active.length + " open";
     var doneHint = assignments.length ? stats.percent + "% finished" : "none yet";
     var gradeValue = summary ? summary.average.toFixed(0) + "%" : "—";
     var gradeHint = summary ? summary.letter + ", " + summary.count + (summary.count === 1 ? " grade" : " grades") : "no grades yet";
@@ -971,9 +971,9 @@
       + kpiCard("kpi-grade", "Average", gradeValue, escapeHtml(gradeHint), "open-grades")
       + '<button type="button" class="panel kpi kpi-progress" data-action="open-active"><p class="kpi-label">So far</p>' + meter("", stats.completed.length + " of " + assignments.length, stats.percent) + "</button>"
       + '</div><div class="board-low">'
-      + '<section class="panel"><div class="panel-head"><div><h2>Due dates</h2><p class="panel-sub">' + escapeHtml(series.caption) + '</p></div><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Week") + rangeBtn("month", "Month") + rangeBtn("year", "Year") + "</div></div>" + lineChart(series.points) + "</section>"
+      + '<section class="panel"><div class="panel-head"><h2>Due dates</h2><div class="range-switch" role="group" aria-label="Chart range">' + rangeBtn("week", "Week") + rangeBtn("month", "Month") + rangeBtn("year", "Year") + "</div></div>" + lineChart(series.points) + "</section>"
       + '<section class="panel"><div class="panel-head"><h2>Still open</h2><select id="pending-scope" aria-label="Which open assignments"><option value="week"' + (DASH.scope === "week" ? " selected" : "") + '>This week</option><option value="all"' + (DASH.scope === "all" ? " selected" : "") + ">Everything open</option></select></div>" + weekStrip() + pendingMarkup(pending) + "</section>"
-      + '</div><section class="panel"><div class="panel-head"><h2>The list</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Filter this list" value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table">' + tableHead() + '<tbody id="dash-rows"></tbody></table></div></section></div>';
+      + '</div><section class="panel"><div class="panel-head"><h2>Homework</h2><div class="table-tools"><label class="mini-search"><input id="dash-search" type="search" placeholder="Filter" value="' + escapeHtml(DASH.query) + '" aria-label="Filter the homework table" autocomplete="off"></label><button type="button" class="btn btn-primary btn-small" data-action="add">Add</button></div></div><div class="table-scroll"><table class="hw-table">' + tableHead() + '<tbody id="dash-rows"></tbody></table></div></section></div>';
     paintDashRows();
     animateBars(document.getElementById("view-dashboard"));
   }
