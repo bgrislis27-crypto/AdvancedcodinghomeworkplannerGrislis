@@ -30,7 +30,7 @@ Your name stays in this browser only. The circle in the top bar shows its first 
 
 ## Tech showcase
 
-`showcase/` is a scrolling slideshow for presenting UPlanner. Serve the folder with the command above and open `http://localhost:8080/showcase/`. The live demo slide runs the real planner, so it shares the same saved data.
+`showcase/` is a scrolling slideshow for presenting UPlanner. Serve the folder with the command above and open `http://localhost:8080/showcase/`. The live demo slide runs the real planner, so it shares the same saved data. The class script is `showcase/script.md`.
 
 | Key | Action |
 | --- | --- |
