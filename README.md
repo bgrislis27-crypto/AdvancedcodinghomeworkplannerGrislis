@@ -28,6 +28,20 @@ Then visit `http://localhost:8080`.
 
 Your name stays in this browser only. The circle in the top bar shows its first letter, and you can change the name from there.
 
+## Tech showcase
+
+`showcase/` is a scrolling slideshow for presenting UPlanner. Serve the folder with the command above and open `http://localhost:8080/showcase/`. The live demo slide runs the real planner, so it shares the same saved data.
+
+| Key | Action |
+| --- | --- |
+| → ↓ Space PageDown | Next |
+| ← ↑ PageUp | Back |
+| T | Start or pause the talk timer (Shift+T resets) |
+| N | Speaker notes |
+| F | Full screen |
+
+The timer turns green between 5:00 and 7:00 and red after 7:00. Clicker remotes work even while the demo has focus. Press Esc inside the demo to hand the keys back to the slides.
+
 ## Where data is saved
 
 UPlanner uses the browser's local storage:

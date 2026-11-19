@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UPlanner · Tech Showcase</title>
+  <meta name="theme-color" content="#11172a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffd23f'/%3E%3Ctext x='16' y='24' font-family='Georgia' font-size='22' font-weight='700' text-anchor='middle' fill='%2311172a'%3EU%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=JetBrains+Mono:wght@400;600;800&family=Caveat:wght@600;700&display=swap">
+  <link rel="stylesheet" href="showcase.css">
+  <script>
+    document.documentElement.classList.add("js");
+    setTimeout(function () { document.documentElement.classList.add("ready"); }, 3000);
+  </script>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><i id="progress-bar"></i></div>
+
+  <main id="deck">
+    <section class="slide hero" id="s-hero" data-title="UPlanner" data-budget="15" data-notes="Hi, I'm Brady. This is UPlanner, a homework planner I built from scratch.">
+      <div class="ruled" aria-hidden="true"><i class="margin-line"></i></div>
+      <p class="byline mono">Brady Grislis &middot; Advanced Coding</p>
+      <h1 class="hero-word" id="hero-word" aria-label="UPlanner">
+        <span class="ch u" aria-hidden="true">U<svg class="ring" viewBox="0 0 120 140"><path d="M64 8 C 22 6, 4 40, 8 78 C 12 118, 50 136, 82 128 C 114 118, 120 76, 110 44 C 100 14, 74 2, 44 12"/></svg></span><span class="ch" aria-hidden="true">P</span><span class="ch" aria-hidden="true">l</span><span class="ch" aria-hidden="true">a</span><span class="ch" aria-hidden="true">n</span><span class="ch" aria-hidden="true">n</span><span class="ch" aria-hidden="true">e</span><span class="ch" aria-hidden="true">r</span>
+      </h1>
+      <p class="hero-sub" id="hero-sub">A homework planner that <mark class="swipe">lives in your browser.</mark></p>
+      <aside class="live-note" id="live-note">
+        <span class="live-tag mono"><i></i>live</span>
+        <span id="live-line">Open the demo to load homework.</span>
+      </aside>
+      <p class="hint mono">scroll or press &rarr;</p>
+    </section>
+
+    <div class="tape" aria-hidden="true">
+      <div class="tape-track" id="tape-track">
+        <span>Assignments</span><b>✶</b><span>Calendar</span><b>✶</b><span>Focus timer</span><b>✶</b><span>Grade average</span><b>✶</b><span>Dark mode</span><b>✶</b><span>Phone preview</span><b>✶</b>
+        <span>Assignments</span><b>✶</b><span>Calendar</span><b>✶</b><span>Focus timer</span><b>✶</b><span>Grade average</span><b>✶</b><span>Dark mode</span><b>✶</b><span>Phone preview</span><b>✶</b>
+      </div>
+    </div>
+
+    <section class="slide chaos" id="s-chaos" data-title="The problem" data-budget="30" data-notes="Homework is scattered across apps, texts, and boards. I wanted one place that is fast and private.">
+      <h2 class="chaos-title">
+        <span class="t-a">Homework lives everywhere.</span>
+        <span class="t-b">Now it lives in one tab.</span>
+      </h2>
+      <div class="board" id="chaos-board">
+        <div class="note n1"><div class="paper classroom"><small class="mono">Classroom &middot; posted 11:59 PM</small><strong>Lab report: stoichiometry</strong></div></div>
+        <div class="note n2"><div class="paper bubble">is the lab due tmrw??</div></div>
+        <div class="note n3"><div class="paper whiteboard">QUIZ FRI!!</div></div>
+        <div class="note n4"><div class="paper sticky">essay outline &rarr; thurs</div></div>
+        <div class="note n5"><div class="paper scrap">ch. 9 notes, p. 212</div></div>
+        <div class="note n6"><div class="paper thought">...was that due today?</div></div>
+        <div class="one-card" id="one-card">
+          <div class="oc-head"><span class="oc-logo">U</span><strong>UPlanner</strong></div>
+          <div class="oc-row"><i class="box"></i><span>Stoichiometry lab report</span><em class="late">2 days late</em></div>
+          <div class="oc-row"><i class="box"></i><span>Verb quiz prep</span><em>today</em></div>
+          <div class="oc-row"><i class="box"></i><span>Essay outline</span><em>Thu</em></div>
+          <div class="oc-row"><i class="box"></i><span>Chapter 9 notes</span><em>Mon</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide demo" id="s-demo" data-title="Live demo" data-budget="120" data-notes="Grab a volunteer and run the steps on the left. Click a step to check it off.">
+      <div class="demo-copy">
+        <h2 class="split">Watch it work.</h2>
+        <ol class="run" id="run-sheet">
+          <li><button type="button" class="step"><span class="step-n">1</span><span class="step-t">A volunteer names an assignment. Press <kbd>n</kbd>.</span><span class="step-s mono">20s</span></button></li>
+          <li><button type="button" class="step"><span class="step-n">2</span><span class="step-t">Check something off from the dashboard.</span><span class="step-s mono">10s</span></button></li>
+          <li><button type="button" class="step"><span class="step-n">3</span><span class="step-t">Click a day on the week strip.</span><span class="step-s mono">15s</span></button></li>
+          <li><button type="button" class="step"><span class="step-n">4</span><span class="step-t">Start a 25-minute focus timer.</span><span class="step-s mono">15s</span></button></li>
+          <li><button type="button" class="step"><span class="step-n">5</span><span class="step-t">Volunteer gives two test scores. Get the average.</span><span class="step-s mono">30s</span></button></li>
+          <li><button type="button" class="step"><span class="step-n">6</span><span class="step-t">Flip to the phone view.</span><span class="step-s mono">10s</span></button></li>
+        </ol>
+        <div class="live-stats" aria-live="polite">
+          <div><b id="st-open">0</b><span class="mono">open</span></div>
+          <div><b id="st-done">0</b><span class="mono">done</span></div>
+          <div><b id="st-late">0</b><span class="mono">late</span></div>
+        </div>
+      </div>
+      <div class="browser-wrap">
+        <div class="browser" id="browser">
+          <div class="browser-bar">
+            <i></i><i></i><i></i>
+            <span class="url mono" id="demo-url">uplanner/#dashboard</span>
+            <a class="pop mono" href="../#dashboard" target="_blank" rel="noopener">open &nearr;</a>
+          </div>
+          <div class="viewport" id="demo-viewport">
+            <iframe id="demo-frame" src="../#dashboard" title="UPlanner, live"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide specs" id="s-specs" data-title="Tech specs" data-budget="30" data-notes="Three files. Everything runs in the browser, so there is nothing to install and nothing to log into.">
+      <div class="label" id="label">
+        <h2>Planner Facts</h2>
+        <p class="serving">Serving size <b>1 browser tab</b></p>
+        <div class="bar thick"></div>
+        <dl>
+          <div class="row"><dt>Files</dt><dd><span data-count="3">3</span></dd></div>
+          <div class="row"><dt>JavaScript</dt><dd><span data-count="1821">1,821</span> lines</dd></div>
+          <div class="row"><dt>CSS</dt><dd><span data-count="2029">2,029</span> lines</dd></div>
+          <div class="row"><dt>HTML</dt><dd><span data-count="313">313</span> lines</dd></div>
+          <div class="bar mid"></div>
+          <div class="row"><dt>Frameworks</dt><dd>0</dd></div>
+          <div class="row"><dt>Servers</dt><dd>0</dd></div>
+          <div class="row"><dt>Accounts</dt><dd>0</dd></div>
+          <div class="row"><dt>Cost</dt><dd>$0</dd></div>
+          <div class="bar mid"></div>
+          <div class="row"><dt>Commits</dt><dd><span data-count="11">11</span></dd></div>
+          <div class="row"><dt>Pages</dt><dd><span data-count="5">5</span></dd></div>
+        </dl>
+        <p class="fine">Saved with localStorage. Runs anywhere a browser runs.</p>
+      </div>
+      <div class="specs-say">
+        <p class="hand red">just</p>
+        <p class="big split">HTML, CSS, and JavaScript.</p>
+        <p class="mono small">index.html &middot; styles.css &middot; app.js</p>
+      </div>
+    </section>
+
+    <section class="slide reel" id="s-reel" data-title="Under the hood" data-budget="45" data-notes="Pick two cards to explain. Hash routing and the timer are the quickest.">
+      <div class="reel-track" id="reel-track">
+        <div class="reel-intro">
+          <h2>Under<br>the hood.</h2>
+          <p class="mono">six tricks that make it work &rarr;</p>
+        </div>
+        <article class="index-card"><span class="ic-n hand">1</span><h3>Hash routing</h3><p>The URL picks the page. <code>#calendar</code> shows the calendar.</p><pre><code>addEventListener("hashchange", route);</code></pre></article>
+        <article class="index-card"><span class="ic-n hand">2</span><h3>Saves every change</h3><p>Every edit writes the whole list to localStorage.</p><pre><code>localStorage.setItem(key, JSON.stringify(list));</code></pre></article>
+        <article class="index-card"><span class="ic-n hand">3</span><h3>Hand-drawn chart</h3><p>The due-date chart is an SVG path built from numbers.</p><pre><code>(i ? "L" : "M") + x + " " + y</code></pre></article>
+        <article class="index-card"><span class="ic-n hand">4</span><h3>A timer that keeps time</h3><p>It counts down to an end time, so a slow tab never drifts.</p><pre><code>remaining = endTime - Date.now();</code></pre></article>
+        <article class="index-card"><span class="ic-n hand">5</span><h3>A bell with no sound file</h3><p>The chime is two sine waves made with Web Audio.</p><pre><code>osc.type = "sine";
+osc.frequency.value = 880;</code></pre></article>
+        <article class="index-card"><span class="ic-n hand">6</span><h3>Phone preview</h3><p>Container queries let the real phone layout run inside a frame.</p><pre><code>@container planner (max-width: 800px)</code></pre></article>
+      </div>
+    </section>
+
+    <section class="slide versions" id="s-versions" data-title="Versions" data-budget="30" data-notes="It started out looking like a template. Every version got simpler and more like a real notebook.">
+      <div class="v-copy">
+        <h2 class="split">Four looks.<br>Four weeks.</h2>
+        <ol class="v-list" id="v-list">
+          <li><span class="mono">Oct 16</span><b>StudyHub</b><em>Purple gradients everywhere.</em></li>
+          <li><span class="mono">Oct 19</span><b>Card dashboard</b><em>Looked like every template.</em></li>
+          <li><span class="mono">Oct 19</span><b>Notebook</b><em>Paper, ink, and a serif.</em></li>
+          <li><span class="mono">Nov 11</span><b>UPlanner</b><em>Clickable, with a phone view.</em></li>
+        </ol>
+      </div>
+      <div class="v-stack" id="v-stack">
+        <figure class="shot"><img src="img/v1.webp" alt="StudyHub, a dark purple dashboard" width="1280" height="800"></figure>
+        <figure class="shot"><img src="img/v2.webp" alt="A white card dashboard with green accents" width="1280" height="800"></figure>
+        <figure class="shot"><img src="img/v3.webp" alt="A paper-colored notebook dashboard" width="1280" height="800"></figure>
+        <figure class="shot"><img src="img/v5.webp" alt="UPlanner today" width="1280" height="800"></figure>
+      </div>
+    </section>
+
+    <section class="slide teach" id="s-teach" data-title="Teach" data-budget="60" data-notes="Have someone type a note, then hit reload. It's still there. That's localStorage.">
+      <h2 class="teach-title split">Your browser has a <mark class="swipe ink">database.</mark></h2>
+      <div class="teach-grid">
+        <div class="code-card">
+          <div class="code-top mono"><span>console</span><button type="button" class="copy mono" id="copy-code">copy</button></div>
+          <pre><code id="lesson-code"><span class="c">// save it</span>
+localStorage.<span class="f">setItem</span>(<span class="s">"note"</span>, <span class="s">"Bio quiz Friday"</span>);
+
+<span class="c">// get it back, even after a reload</span>
+localStorage.<span class="f">getItem</span>(<span class="s">"note"</span>);
+
+<span class="c">// lists need to become text first</span>
+localStorage.<span class="f">setItem</span>(<span class="s">"hw"</span>, JSON.<span class="f">stringify</span>(list));
+JSON.<span class="f">parse</span>(localStorage.<span class="f">getItem</span>(<span class="s">"hw"</span>));</code></pre>
+        </div>
+        <div class="sticky-wrap">
+          <div class="sticky-note" id="sticky">
+            <label for="note" class="hand">Write anything. Then reload.</label>
+            <textarea id="note" rows="4" spellcheck="false" placeholder="Bio quiz Friday"></textarea>
+            <button type="button" class="reload mono" id="reload">reload the page &#8635;</button>
+            <span class="stamp" id="stamp" aria-hidden="true">Still here.</span>
+          </div>
+        </div>
+      </div>
+      <ul class="rules mono">
+        <li>Text only, so use JSON for lists</li>
+        <li>About 5 MB per site</li>
+        <li>Stays on this device</li>
+      </ul>
+    </section>
+
+    <section class="slide peek" id="s-peek" data-title="The database" data-budget="30" data-notes="This JSON is UPlanner's entire database. Add one from here, and the planner shows it too.">
+      <div class="peek-copy">
+        <h2 class="split">This is UPlanner&rsquo;s whole database.</h2>
+        <ul class="keys mono" id="keys"></ul>
+        <button type="button" class="add-one mono" id="add-one">add one from here &rarr;</button>
+        <p class="mono small" id="add-msg" aria-live="polite"></p>
+      </div>
+      <div class="json-card" data-lenis-prevent>
+        <div class="code-top mono"><span>localStorage["studyhub.assignments"]</span><span id="json-size"></span></div>
+        <pre id="json-view"></pre>
+      </div>
+    </section>
+
+    <section class="slide close" id="s-close" data-title="Questions" data-budget="30" data-notes="Point at the code. People can open the planner on their phones while you take questions.">
+      <h2 class="q" id="q-word" aria-label="Questions?"><span>Q</span><span>u</span><span>e</span><span>s</span><span>t</span><span>i</span><span>o</span><span>n</span><span>s</span><span class="qm">?</span></h2>
+      <div class="qr-card">
+        <svg id="qr" role="img" aria-label="QR code that opens UPlanner"></svg>
+        <p class="hand">Try it on your phone</p>
+        <p class="mono small" id="qr-url"></p>
+      </div>
+    </section>
+  </main>
+
+  <p class="hud-slide mono" id="hud-slide">1 / 9 &middot; UPlanner</p>
+  <button type="button" class="hud-timer mono" id="hud-timer" title="Talk timer: T to start or pause, Shift+T to reset">0:00 <small>/ 7:00</small></button>
+  <aside class="speaker" id="speaker" hidden>
+    <p class="mono" id="speaker-meta"></p>
+    <p id="speaker-text"></p>
+  </aside>
+
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script src="vendor/SplitText.min.js"></script>
+  <script src="vendor/lenis.min.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="showcase.js"></script>
+</body>
+</html>
